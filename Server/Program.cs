@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using music_manager_starter.Data;
 using System.Security.AccessControl;
+using music_manager_starter.Server.Middleware;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +50,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseMiddleware<FakeUserMiddleware>();
 
 app.MapRazorPages();
 app.MapControllers();
