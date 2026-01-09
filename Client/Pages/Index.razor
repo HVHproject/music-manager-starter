@@ -16,11 +16,10 @@
 @code {
     private async Task SubmitRating(Guid songId, double rating)
     {
-        await Http.PostAsJsonAsync("api/ratings", new
-        {
-            SongId = songId,
-            Value = rating
-        });
+        await Http.PostAsJsonAsync(
+            $"api/ratings/{songId}",
+            rating
+        );
 
         await ReloadSongs();
     }
