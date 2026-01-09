@@ -28,15 +28,15 @@ public sealed class RatingService : IRatingService
             {
                 SongId = songId,
                 UserId = userId,
-                Value = value,
+                Value = (decimal)value,
                 CreatedAt = DateTime.UtcNow
             };
             _context.Ratings.Add(rating);
         }
         else
         {
-            rating.Value = value;
-            rating.UpdatedAt = DateTime.UtcNow;
+            rating.Value = (decimal)value;
+            rating.CreatedAt = DateTime.UtcNow;
         }
 
         await _context.SaveChangesAsync();
@@ -52,7 +52,7 @@ public sealed class RatingService : IRatingService
             .ToListAsync();
 
         var total = grouped.Sum(x => x.Count);
-        var avg = total == 0 ? 0 : grouped.Sum(x => x.Value * x.Count) / total;
+        var avg = total == 0 ? 0 : (double)grouped.Sum(x => x.Value * x.Count) / total;
 
         var distribution = new int[11];
         foreach (var g in grouped)

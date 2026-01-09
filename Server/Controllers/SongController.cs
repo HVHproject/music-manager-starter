@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using music_manager_starter.Data;
 using music_manager_starter.Data.Models;
 using System;
+using System.Security.Claims;
+using music_manager_starter.Shared;
 
 namespace music_manager_starter.Server.Controllers
 {
@@ -17,26 +19,33 @@ namespace music_manager_starter.Server.Controllers
             _context = context;
         }
 
-  
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Song>>> GetSongs()
+        public async Task<ActionResult<List<music_manager_starter.Shared.Song>>> GetSongs()
         {
-            return await _context.Songs.ToListAsync();
-        }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        [HttpPost]
-        public async Task<ActionResult<Song>> PostSong(Song song)
-        {
-            if (song == null)
-            {
-                return BadRequest("Song cannot be null.");
-            }
+            var songsList = await _context.Songs.ToListAsync();
+            var ratingsList = await _context.Ratings.ToListAsync();
 
+            var songs = songsList.Select(s => {
+                var songRatings = ratingsList.Where(r => r.SongId == s.Id);
+                var totalRatings = songRatings.Count();
+                var average = totalRatings > 0 ? songRatings.Average(r => (double)r.Value) : (double?)null;
+                var userRating = songRatings.FirstOrDefault(r => r.UserId == userId)?.Value;
+                return new music_manager_starter.Shared.Song
+                {
+                    Id = s.Id,
+                    Title = s.Title,
+                    Artist = s.Artist,
+                    Album = s.Album,
+                    Genre = s.Genre,
+                    AverageRating = average,
+                    UserRating = userRating.HasValue ? (double?)userRating.Value : null,
+                    TotalRatings = totalRatings
+                };
+            }).ToList();
 
-            _context.Songs.Add(song);
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            return Ok(songs);
         }
     }
 }

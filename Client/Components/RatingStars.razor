@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="flex items-center space-x-2 select-none" @onmouseleave="ClearHover">
+    @for (int i = 1; i <= 5; i++)
+    {
+        <div class="relative w-6 h-6 cursor-pointer"
+             @onmousemove="e => OnHover(e, i)"
+             @onclick="() => OnClick(i)">
+
+            <!-- Average rating layer -->
+            <div class="absolute top-0 left-0 w-full h-full text-white">
+                <div class="overflow-hidden border-0"
+                     style="width:@GetFillPercent(AverageRating, i)%">
+                    ★
+                </div>
+                <div class="absolute top-0 left-0 w-full h-full text-gray-700 border-0">
+                    ★
+                </div>
+            </div>
+
+            <!-- Hover overlay -->
+            @if (HoveredRating > 0)
+            {
+                <div class="absolute top-0 left-0 h-full text-yellow-400 border-0"
+                     style="width:@GetFillPercent(HoveredRating, i)%">
+                    ★
+                </div>
+            }
+
+            <!-- User rating overlay -->
+            @if (UserRating.HasValue && HoveredRating == 0)
+            {
+                <div class="absolute top-0 left-0 h-full text-yellow-300 opacity-25"
+                     style="width:@GetFillPercent(UserRating.Value, i)%">
+                    ★
+                </div>
+            }
+        </div>
+    }
+
+    <span class="text-white font-medium">
+        @(AverageRating.HasValue? AverageRating.Value.ToString("0.0") : "No rating")
+    </span>
+</div>
+
+@code {
+    [Parameter] public double? AverageRating { get; set; }
+    [Parameter] public double? UserRating { get; set; }
+    [Parameter] public EventCallback<double> OnRatingSelected { get; set; }
+
+    private double HoveredRating;
+
+    private void OnHover(MouseEventArgs e, int starIndex)
+    {
+        var width = 10; // placeholder to replace with interlop
+        var relativeX = e.OffsetX;
+        HoveredRating = starIndex - 1 + (relativeX / 24.0 >= 0.5 ? 1 : 0.5);
+    }
+
+    private void ClearHover() => HoveredRating = 0;
+
+    private async Task OnClick(int starIndex)
+    {
+        if (HoveredRating <= 0) return;
+        if (HoveredRating <= 0) return;
+        await OnRatingSelected.InvokeAsync(HoveredRating);
+    }
+
+    private static string GetFillPercent(double? rating, int starIndex)
+    {
+        if (!rating.HasValue || rating.Value <= 0) return "0%";
+        var diff = rating.Value - (starIndex - 1);
+        if (diff >= 1) return "100%";
+        if (diff >= 0.5) return "50%";
+        return "0%";
+    }
+}

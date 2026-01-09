@@ -10,4 +10,6 @@ public sealed class RatingSummaryDto
     public int[] Distribution { get; init; } = new int[11];
 
     public double? UserRating { get; init; }
+    public DateTime? CreatedAt { get; set; }
+
 }

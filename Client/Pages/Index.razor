@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using music_manager_starter.Shared
+@using music_manager_starter.Client.Components
 
 @inject HttpClient Http
 
@@ -12,6 +13,26 @@
     }
 }
 
+@code {
+    private async Task SubmitRating(Guid songId, double rating)
+    {
+        await Http.PostAsJsonAsync("api/ratings", new
+        {
+            SongId = songId,
+            Value = rating
+        });
+
+        await ReloadSongs();
+    }
+
+    private async Task ReloadSongs()
+    {
+        songs = await Http.GetFromJsonAsync<List<Song>>("api/songs");
+        StateHasChanged();
+    }
+}
+
+
 <div class="p-0 min-h-screen bg-pattern flex flex-col items-center justify-center">
     <h2 class="text-3xl font-bold text-white mb-8 text-center">Song Library</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
@@ -22,6 +43,10 @@
                 <div class="glass p-6 border border-gray-300 rounded-lg text-white transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer">
                     <h3 class="text-xl font-semibold mb-2">@song.Title</h3>
                     <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
+                    <RatingStars
+    AverageRating="@song.AverageRating"
+    UserRating="@song.UserRating"
+    OnRatingSelected="rating => SubmitRating(song.Id, rating)" />
 
                 </div>
             }
