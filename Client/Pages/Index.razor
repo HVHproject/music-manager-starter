@@ -43,10 +43,9 @@
                 <div class="glass p-6 border border-gray-300 rounded-lg text-white transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer">
                     <h3 class="text-xl font-semibold mb-2">@song.Title</h3>
                     <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
-                    <RatingStars
-    AverageRating="@song.AverageRating"
-    UserRating="@song.UserRating"
-    OnRatingSelected="rating => SubmitRating(song.Id, rating)" />
+                    <RatingStars AverageRating="@(song.AverageRating ?? 0)"
+                                 UserRating="@song.UserRating"
+                                 OnRatingSelected="rating => SubmitRating(song.Id, rating)" />
 
                 </div>
             }

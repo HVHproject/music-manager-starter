@@ -1,78 +1,177 @@
-﻿@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Web
+﻿@using System.Globalization
 
-<div class="flex items-center space-x-2 select-none" @onmouseleave="ClearHover">
-    @for (int i = 1; i <= 5; i++)
-    {
-        <div class="relative w-6 h-6 cursor-pointer"
-             @onmousemove="e => OnHover(e, i)"
-             @onclick="() => OnClick(i)">
+<div class="flex flex-col gap-1">
+    <!-- Stars container -->
+    <div class="flex items-center gap-0.5"
+         @onmouseleave="() => ClearHover()">
+        @for (int i = 0; i < 5; i++)
+        {
+            int starIndex = i;
+            <div class="relative w-5 h-5 @(OnRatingSelected.HasDelegate ? "cursor-pointer" : "cursor-default")"
+                 @onclick="() => HandleClick(starIndex + 1)">
 
-            <!-- Average rating layer -->
-            <div class="absolute top-0 left-0 w-full h-full text-white">
-                <div class="overflow-hidden border-0"
-                     style="width:@GetFillPercent(AverageRating, i)%">
-                    ★
-                </div>
-                <div class="absolute top-0 left-0 w-full h-full text-gray-700 border-0">
-                    ★
+                <!-- Left half for 0.5 increment hover -->
+                @if (OnRatingSelected.HasDelegate)
+                {
+                    <div class="absolute left-0 top-0 w-1/2 h-full z-20"
+                         @onmouseenter="() => SetHover(starIndex + 0.5)">
+                    </div>
+                }
+
+                <!-- Right half for full increment hover -->
+                @if (OnRatingSelected.HasDelegate)
+                {
+                    <div class="absolute right-0 top-0 w-1/2 h-full z-20"
+                         @onmouseenter="() => SetHover(starIndex + 1)">
+                    </div>
+                }
+
+                <!-- Star display -->
+                <div class="relative w-full h-full">
+                    <!-- Base star (always shown) -->
+                    <svg class="absolute w-5 h-5 @GetBaseStarColor()"
+                         fill="currentColor"
+                         viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+
+                    <!-- Fill overlay (for hover/rating) -->
+                    @{
+                        var fillPercentage = GetFillPercentage(starIndex);
+                        if (fillPercentage > 0)
+                        {
+                            <div class="absolute top-0 left-0 overflow-hidden"
+                                 style="width: @(fillPercentage)%">
+                                <svg class="w-5 h-5 @GetFillStarColor()"
+                                     fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            </div>
+                        }
+                    }
                 </div>
             </div>
+        }
+    </div>
 
-            <!-- Hover overlay -->
-            @if (HoveredRating > 0)
+    <!-- Rating text -->
+    <div class="flex items-center justify-between text-xs">
+        <div>
+            @if (hoverRating > 0)
             {
-                <div class="absolute top-0 left-0 h-full text-yellow-400 border-0"
-                     style="width:@GetFillPercent(HoveredRating, i)%">
-                    ★
-                </div>
+                <span class="text-blue-300 font-semibold">@hoverRating.ToString("F1")</span>
             }
-
-            <!-- User rating overlay -->
-            @if (UserRating.HasValue && HoveredRating == 0)
+            else
             {
-                <div class="absolute top-0 left-0 h-full text-yellow-300 opacity-25"
-                     style="width:@GetFillPercent(UserRating.Value, i)%">
-                    ★
-                </div>
+                <span class="text-gray-300">
+                    @if (UserRating.HasValue)
+                    {
+                        <span>Your rating: <span class="font-semibold">@UserRating.Value.ToString("F1")</span></span>
+                    }
+                    else if (AverageRating > 0)
+                    {
+                        <span>Avg: <span class="font-semibold">@AverageRating.ToString("F1")</span></span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">No ratings</span>
+                    }
+                </span>
             }
         </div>
-    }
-
-    <span class="text-white font-medium">
-        @(AverageRating.HasValue? AverageRating.Value.ToString("0.0") : "No rating")
-    </span>
+    </div>
 </div>
 
 @code {
-    [Parameter] public double? AverageRating { get; set; }
-    [Parameter] public double? UserRating { get; set; }
-    [Parameter] public EventCallback<double> OnRatingSelected { get; set; }
+    [Parameter]
+    public double AverageRating { get; set; }
 
-    private double HoveredRating;
+    [Parameter]
+    public double? UserRating { get; set; }
 
-    private void OnHover(MouseEventArgs e, int starIndex)
+    [Parameter]
+    public EventCallback<double> OnRatingSelected { get; set; }
+
+    private double hoverRating = 0;
+
+    private string GetBaseStarColor()
     {
-        var width = 10; // placeholder to replace with interlop
-        var relativeX = e.OffsetX;
-        HoveredRating = starIndex - 1 + (relativeX / 24.0 >= 0.5 ? 1 : 0.5);
+        // When hovering, show gray base stars (empty visual)
+        if (hoverRating > 0)
+            return "text-gray-600";
+
+        // Otherwise, use standard gray
+        return "text-gray-600";
     }
 
-    private void ClearHover() => HoveredRating = 0;
-
-    private async Task OnClick(int starIndex)
+    private string GetFillStarColor()
     {
-        if (HoveredRating <= 0) return;
-        if (HoveredRating <= 0) return;
-        await OnRatingSelected.InvokeAsync(HoveredRating);
+        // Yellow for hover preview
+        if (hoverRating > 0)
+            return "text-yellow-300";
+
+        // White for average rating display (when not hovering)
+        return "text-white";
     }
 
-    private static string GetFillPercent(double? rating, int starIndex)
+    private double GetFillPercentage(int starIndex)
     {
-        if (!rating.HasValue || rating.Value <= 0) return "0%";
-        var diff = rating.Value - (starIndex - 1);
-        if (diff >= 1) return "100%";
-        if (diff >= 0.5) return "50%";
-        return "0%";
+        // If hovering, show the hover rating
+        if (hoverRating > 0)
+        {
+            double starValue = starIndex + 1;
+
+            if (hoverRating >= starValue)
+                return 100;
+
+            if (hoverRating > starIndex && hoverRating < starValue)
+            {
+                double partial = hoverRating - starIndex;
+                return partial * 100;
+            }
+
+            return 0;
+        }
+
+        // If not hovering, show the average rating (if it exists)
+        if (AverageRating > 0)
+        {
+            double starValue = starIndex + 1;
+
+            if (AverageRating >= starValue)
+                return 100;
+
+            if (AverageRating > starIndex && AverageRating < starValue)
+            {
+                double partial = AverageRating - starIndex;
+                return partial * 100;
+            }
+        }
+
+        // No rating to display
+        return 0;
+    }
+
+    private void SetHover(double rating)
+    {
+        if (OnRatingSelected.HasDelegate)
+        {
+            hoverRating = rating;
+        }
+    }
+
+    private void ClearHover()
+    {
+        hoverRating = 0;
+    }
+
+    private async Task HandleClick(double rating)
+    {
+        if (OnRatingSelected.HasDelegate)
+        {
+            await OnRatingSelected.InvokeAsync(rating);
+            ClearHover();
+        }
     }
 }
