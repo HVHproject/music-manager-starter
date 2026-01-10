@@ -5,15 +5,23 @@ using music_manager_starter.Shared;
 
 namespace music_manager_starter.Server.Services;
 
+/// <summary>
+/// Implementation of <see cref="IRatingService"/> for managing song ratings
+/// </summary>
 public sealed class RatingService : IRatingService
 {
     private readonly DataDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RatingService"/> class
+    /// </summary>
+    /// <param name="context">The database context for rating operations</param>
     public RatingService(DataDbContext context)
     {
         _context = context;
     }
 
+    /// <inheritdoc/>
     public async Task RateSongAsync(Guid songId, double value, string userId)
     {
         if (value < 0 || value > 5 || value * 2 % 1 != 0)
@@ -42,6 +50,7 @@ public sealed class RatingService : IRatingService
         await _context.SaveChangesAsync();
     }
 
+    /// <inheritdoc/>
     public async Task<RatingSummaryDto> GetSummaryAsync(Guid songId, string userId)
     {
         var ratings = _context.Ratings.Where(r => r.SongId == songId);

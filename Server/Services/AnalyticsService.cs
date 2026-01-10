@@ -5,15 +5,23 @@ using System.Linq;
 
 namespace music_manager_starter.Server.Services
 {
+    /// <summary>
+    /// Implementation of <see cref="IAnalyticsService"/> for providing analytics data
+    /// </summary>
     public class AnalyticsService : IAnalyticsService
     {
         private readonly DataDbContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AnalyticsService"/> class
+        /// </summary>
+        /// <param name="context">The database context for analytics operations</param>
         public AnalyticsService(DataDbContext context)
         {
             _context = context;
         }
 
+        /// <inheritdoc/>
         public async Task<List<MostRatedSongDto>> GetMostRatedSongsAsync(int topN = 10)
         {
             // First, get the ratings data separately to avoid complex queries
@@ -50,6 +58,7 @@ namespace music_manager_starter.Server.Services
             return result;
         }
 
+        /// <inheritdoc/>
         public async Task<List<RatingTrendDto>> GetRatingTrendsAsync(DateTime? startDate = null, DateTime? endDate = null)
         {
             startDate ??= DateTime.UtcNow.AddMonths(-6);
@@ -80,6 +89,7 @@ namespace music_manager_starter.Server.Services
             return trends;
         }
 
+        /// <inheritdoc/>
         public async Task<List<GenrePopularityDto>> GetGenrePopularityAsync()
         {
             // Get data separately to avoid complex queries
@@ -118,6 +128,7 @@ namespace music_manager_starter.Server.Services
             return result;
         }
 
+        /// <inheritdoc/>
         public async Task<AnalyticsSummaryDto> GetAnalyticsSummaryAsync()
         {
             var ratings = await _context.Ratings.ToListAsync();
@@ -144,40 +155,90 @@ namespace music_manager_starter.Server.Services
         }
     }
 
+    /// <summary>
+    /// Data transfer object for most rated songs
+    /// </summary>
     public class MostRatedSongDto
     {
+        /// <summary>Gets or sets the song identifier</summary>
         public Guid SongId { get; set; }
+
+        /// <summary>Gets or sets the song title</summary>
         public string Title { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the song artist</summary>
         public string Artist { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the song genre</summary>
         public string Genre { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the average rating</summary>
         public double AverageRating { get; set; }
+
+        /// <summary>Gets or sets the total number of ratings</summary>
         public int TotalRatings { get; set; }
+
+        /// <summary>Gets or sets the date of the last rating</summary>
         public DateTimeOffset? LastRated { get; set; }
     }
 
+    /// <summary>
+    /// Data transfer object for rating trends
+    /// </summary>
     public class RatingTrendDto
     {
+        /// <summary>Gets or sets the date of the trend data</summary>
         public DateTime Date { get; set; }
+
+        /// <summary>Gets or sets the average rating for the date</summary>
         public double AverageRating { get; set; }
+
+        /// <summary>Gets or sets the total ratings for the date</summary>
         public int TotalRatings { get; set; }
+
+        /// <summary>Gets or sets the total songs rated for the date</summary>
         public int TotalSongsRated { get; set; }
     }
 
+    /// <summary>
+    /// Data transfer object for genre popularity
+    /// </summary>
     public class GenrePopularityDto
     {
+        /// <summary>Gets or sets the genre name</summary>
         public string Genre { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the total songs in this genre</summary>
         public int TotalSongs { get; set; }
+
+        /// <summary>Gets or sets the total ratings for this genre</summary>
         public int TotalRatings { get; set; }
+
+        /// <summary>Gets or sets the average rating for this genre</summary>
         public double AverageRating { get; set; }
+
+        /// <summary>Gets the popularity score (total ratings × average rating)</summary>
         public double PopularityScore => TotalRatings * AverageRating;
     }
 
+    /// <summary>
+    /// Data transfer object for analytics summary
+    /// </summary>
     public class AnalyticsSummaryDto
     {
+        /// <summary>Gets or sets the total number of songs</summary>
         public int TotalSongs { get; set; }
+
+        /// <summary>Gets or sets the total number of ratings</summary>
         public int TotalRatings { get; set; }
+
+        /// <summary>Gets or sets the total number of unique users who rated</summary>
         public int TotalUsers { get; set; }
+
+        /// <summary>Gets or sets the overall average rating</summary>
         public double OverallAverageRating { get; set; }
+
+        /// <summary>Gets or sets the most active day for ratings</summary>
         public DateTime? MostActiveDay { get; set; }
     }
 }

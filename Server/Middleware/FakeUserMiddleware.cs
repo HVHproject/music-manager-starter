@@ -3,9 +3,10 @@
 namespace music_manager_starter.Server.Middleware
 {
     /// <summary>
-    /// Injecting a fake authenticated user with middleware.
-    /// In a real coding environment, I would either work on the auth system first, or mock it out if I am waiting on another developer to finish.
+    /// Processes an HTTP request by injecting a fake user identity
     /// </summary>
+    /// <param name="context">The HTTP context for the request</param>
+    /// <returns>A task representing the async operation</returns>
     public sealed class FakeUserMiddleware
     {
         private readonly RequestDelegate _next;
