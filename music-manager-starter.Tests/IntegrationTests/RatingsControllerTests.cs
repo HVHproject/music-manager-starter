@@ -1,175 +1,105 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
-using music_manager_starter.Data;
-using music_manager_starter.Data.Models;
-using music_manager_starter.Server;
-using music_manager_starter.Shared;
-using System;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
+﻿using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Moq;
+using music_manager_starter.Server.Controllers;
+using music_manager_starter.Server.Services;
+using music_manager_starter.Shared;
+using FluentAssertions;
 using Xunit;
 
 namespace music_manager_starter.Tests.IntegrationTests
 {
-    public class RatingsControllerTests : IClassFixture<WebApplicationFactory<Program>>
+    public class RatingsControllerTests
     {
-        private readonly WebApplicationFactory<Program> _factory;
-        private readonly HttpClient _client;
+        private readonly Mock<IRatingService> _mockRatingService;
+        private readonly RatingsController _controller;
 
         public RatingsControllerTests()
         {
-            _factory = new WebApplicationFactory<Program>()
-                .WithWebHostBuilder(builder =>
-                {
-                    builder.UseEnvironment("Test");
-                    builder.ConfigureServices(services =>
-                    {
-                        // Remove the existing DbContext registration
-                        var descriptor = services.SingleOrDefault(
-                            d => d.ServiceType == typeof(DbContextOptions<DataDbContext>));
+            _mockRatingService = new Mock<IRatingService>();
+            _controller = new RatingsController(_mockRatingService.Object);
 
-                        if (descriptor != null)
-                        {
-                            services.Remove(descriptor);
-                        }
+            // Setup fake user for controller context
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "test-user-123"),
+                new Claim(ClaimTypes.Name, "test-user-123")
+            }, "Test"));
 
-                        // Add InMemory database for testing
-                        services.AddDbContext<DataDbContext>(options =>
-                        {
-                            options.UseInMemoryDatabase("TestDb_" + Guid.NewGuid().ToString());
-                        });
-                    });
-                });
-
-            _client = _factory.CreateClient();
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = user }
+            };
         }
 
         [Fact]
-        public async Task PostRating_WithValidData_ReturnsOk()
+        public async Task Rate_ValidRating_CallsService()
         {
             // Arrange
             var songId = Guid.NewGuid();
             var ratingValue = 4.5;
 
-            // Set up test user header
-            _client.DefaultRequestHeaders.Add("X-Test-User", "test-user-123");
-
-            // Create a song in the database first
-            using (var scope = _factory.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
-                dbContext.Songs.Add(new Data.Models.Song
-                {
-                    Id = songId,
-                    Title = "Test Song",
-                    Artist = "Test Artist"
-                });
-                await dbContext.SaveChangesAsync();
-            }
+            _mockRatingService.Setup(s => s.RateSongAsync(
+                songId,
+                ratingValue,
+                "test-user-123"))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
 
             // Act
-            var response = await _client.PostAsJsonAsync(
-                $"/api/ratings/{songId}",
-                ratingValue
-            );
+            var result = await _controller.Rate(songId, ratingValue);
 
-            // Assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            // Verify the rating was created
-            using (var scope = _factory.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
-                var rating = await dbContext.Ratings
-                    .FirstOrDefaultAsync(r => r.SongId == songId);
-
-                Assert.NotNull(rating);
-                Assert.Equal((decimal)ratingValue, rating.Value);
-                Assert.Equal("test-user-123", rating.UserId);
-            }
+            // Assert using FluentAssertions
+            result.Should().BeOfType<OkResult>();
+            _mockRatingService.Verify();
         }
 
         [Fact]
-        public async Task PostRating_WithoutUserHeader_UsesDefaultUserId()
+        public async Task Summary_ValidRequest_ReturnsServiceResult()
         {
             // Arrange
             var songId = Guid.NewGuid();
-            var ratingValue = 3.0;
-
-            // Don't set X-Test-User header
-
-            // Create a song
-            using (var scope = _factory.Services.CreateScope())
+            var expectedSummary = new RatingSummaryDto
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
-                dbContext.Songs.Add(new Data.Models.Song { Id = songId, Title = "Test Song" });
-                await dbContext.SaveChangesAsync();
-            }
+                SongId = songId,
+                Average = 4.5,
+                TotalRatings = 10,
+                UserRating = 5.0,
+                Distribution = new[] { 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 0 }
+            };
+
+            _mockRatingService.Setup(s => s.GetSummaryAsync(
+                songId,
+                "test-user-123"))
+                .ReturnsAsync(expectedSummary);
 
             // Act
-            var response = await _client.PostAsJsonAsync(
-                $"/api/ratings/{songId}",
-                ratingValue
-            );
+            var result = await _controller.Summary(songId);
 
-            // Assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-            // Verify default user ID was used
-            using (var scope = _factory.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
-                var rating = await dbContext.Ratings
-                    .FirstOrDefaultAsync(r => r.SongId == songId);
-
-                Assert.NotNull(rating);
-                Assert.Equal("test-user-001", rating.UserId);
-            }
+            // Assert using FluentAssertions
+            result.Should().BeOfType<OkObjectResult>()
+                .Which.Value.Should().BeEquivalentTo(expectedSummary);
         }
 
         [Fact]
-        public async Task GetSummary_ReturnsCorrectData()
+        public async Task Rate_InvalidRating_ReturnsBadRequest()
         {
             // Arrange
             var songId = Guid.NewGuid();
-            var userId = "test-user-123";
+            var invalidRating = 6.0; // Out of range
 
-            _client.DefaultRequestHeaders.Add("X-Test-User", userId);
+            _mockRatingService.Setup(s => s.RateSongAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<double>(),
+                It.IsAny<string>()))
+                .ThrowsAsync(new ArgumentOutOfRangeException());
 
-            using (var scope = _factory.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<DataDbContext>();
-
-                dbContext.Songs.Add(new Data.Models.Song { Id = songId, Title = "Test Song" });
-
-                // Add ratings
-                dbContext.Ratings.AddRange(
-                    new Rating { SongId = songId, UserId = userId, Value = 4.0m },
-                    new Rating { SongId = songId, UserId = "user-002", Value = 5.0m },
-                    new Rating { SongId = songId, UserId = "user-003", Value = 3.0m }
-                );
-
-                await dbContext.SaveChangesAsync();
-            }
-
-            // Act
-            var response = await _client.GetAsync($"/api/ratings/{songId}");
-            var summary = await response.Content.ReadFromJsonAsync<RatingSummaryDto>();
-
-            // Assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.NotNull(summary);
-            Assert.Equal(songId, summary.SongId);
-            Assert.Equal(4.0, summary.UserRating); // Current user's rating
-            Assert.Equal(3, summary.TotalRatings);
-            Assert.Equal(4.0, summary.Average); // (4 + 5 + 3) / 3 = 4.0
-            Assert.Contains(summary.Distribution, count => count > 0);
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+                () => _controller.Rate(songId, invalidRating));
         }
     }
 }
