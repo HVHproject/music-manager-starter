@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DataDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IRatingService, RatingService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
@@ -52,6 +53,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseMiddleware<FakeUserMiddleware>();
+
+app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapControllers();
