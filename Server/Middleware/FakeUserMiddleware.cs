@@ -17,22 +17,27 @@ namespace music_manager_starter.Server.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var userId =
-                context.Request.Headers.TryGetValue("X-Test-User", out var headerUser)
-                    ? headerUser.ToString()
-                    : "test-user-001";
+            string userId = "test-user-001";
+
+            if (context.Request.Headers.TryGetValue("X-Test-User", out var headerUser))
+            {
+                var headerValue = headerUser.ToString();
+                if (!string.IsNullOrWhiteSpace(headerValue))
+                {
+                    userId = headerValue;
+                }
+            }
 
             var claims = new[]
             {
-        new Claim(ClaimTypes.NameIdentifier, userId),
-        new Claim(ClaimTypes.Name, userId)
-    };
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(ClaimTypes.Name, userId)
+            };
 
             var identity = new ClaimsIdentity(claims, "Fake");
             context.User = new ClaimsPrincipal(identity);
 
             await _next(context);
         }
-
     }
 }
