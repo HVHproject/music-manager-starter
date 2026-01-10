@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>music-manager-starter.Server</RootNamespace>
     <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
+	  <PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
 
 	<ItemGroup>
