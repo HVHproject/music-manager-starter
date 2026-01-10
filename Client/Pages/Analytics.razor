@@ -145,7 +145,7 @@
                     </div>
                 </div>
 
-                <!-- Rating Trends - Improved Version -->
+                <!-- Rating Trends - Simplified Dot Chart -->
                 <div class="glass p-6 rounded-xl">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-bold">Rating Trends</h2>
@@ -162,62 +162,152 @@
                                     class="px-3 py-1 text-sm @(daysRange == 90 ? "bg-purple-700" : "bg-gray-700") rounded">
                                 90d
                             </button>
+                            <button @onclick="() => ChangeTimeRange(180)"
+                                    class="px-3 py-1 text-sm @(daysRange == 180 ? "bg-purple-700" : "bg-gray-700") rounded">
+                                180d
+                            </button>
                         </div>
                     </div>
 
                     <div class="h-80">
                         @if (ratingTrends.Any())
                         {
-                            <!-- Improved bar chart with better spacing -->
-                            <div class="flex items-end h-48 mt-4 px-2" style="gap: 4px">
-                                @foreach (var trend in ratingTrends)
-                                {
-                                    var maxRatings = ratingTrends.Max(t => t.TotalRatings);
-                                    var heightPercentage = maxRatings > 0 ? (trend.TotalRatings * 80.0 / maxRatings) : 0;
-                                    var avgRatingHeight = trend.AverageRating * 10; // Scale for visibility
+                            <div class="relative h-full">
+                                <!-- Y-Axis Labels -->
+                                <div class="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between pb-12">
+                                    @for (int i = 5; i >= 1; i--)
+                                    {
+                                        <div class="text-xs text-gray-400 text-right pr-2">
+                                            @i
+                                        </div>
+                                    }
+                                    <div class="text-xs text-gray-400 text-right pr-2">
+                                        0
+                                    </div>
+                                </div>
 
-                                    <div class="flex flex-col items-center relative flex-1">
-                                        <!-- Bar for total ratings -->
-                                        <div class="w-full bg-gradient-to-t from-purple-700 to-purple-500 rounded-t-lg relative group"
-                                             style="height: @(heightPercentage)%">
-                                            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                                @trend.Date.ToString("MMM d")<br />
-                                                Ratings: @trend.TotalRatings<br />
-                                                Avg: @trend.AverageRating.ToString("F1")
+                                <div class="ml-10 h-full overflow-x-auto px-4" id="graph-scroll-container">
+                                    <div class="relative min-w-full" style="min-width: @(Math.Max(800, ratingTrends.Count * 40))px; height: 100%;">
+
+                                        <div class="absolute inset-0" style="height: calc(100% - 40px);">
+                                            @for (int i = 0; i <= 5; i++)
+                                            {
+                                                <div class="absolute left-0 right-0 border-t border-gray-700"
+                                                     style="top: @(i * 20)%"></div>
+                                            }
+                                        </div>
+
+                                        <div class="absolute inset-0" style="height: calc(100% - 40px);">
+                                            @{
+                                                var points = ratingTrends.Select((trend, index) =>
+                                                new
+                                                {
+                                                    X = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1)) + "%",
+                                                    Y = (5 - trend.AverageRating) * 20 + "%",
+                                                    Trend = trend,
+                                                    Index = index
+                                                }).ToList();
+                                            }
+
+                                            <svg class="absolute inset-0 w-full h-full">
+                                                @foreach (var point in points)
+                                                {
+                                                    <circle cx="@point.X"
+                                                            cy="@point.Y"
+                                                            r="4"
+                                                            fill="#FBBF24"
+                                                            class="data-point hover:r-6 transition-all duration-200 cursor-pointer opacity-80 hover:opacity-100 hover:drop-shadow-lg"
+                                                            @onclick="() => ShowTooltip(point, point.Trend)"
+                                                            @onmouseenter="() => ShowTooltip(point, point.Trend)" />
+                                                }
+                                            </svg>
+                                        </div>
+
+                                        <!-- X-Axis Date Labels - Fixed at bottom of scroll container -->
+                                        <div class="absolute bottom-0 left-0 right-0 h-10 pt-2">
+                                            <div class="relative h-full">
+                                                @if (ratingTrends.Count > 0)
+                                                {
+                                                    @if (daysRange <= 30)
+                                                    {
+                                                        <!-- Show all labels for 30 days or less -->
+                                                        @foreach (var trend in ratingTrends)
+                                                        {
+                                                            var index = ratingTrends.IndexOf(trend);
+                                                            var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                            <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2"
+                                                                 style="left: @(leftPercentage)%">
+                                                                @trend.Date.ToString("MMM d")
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else if (daysRange <= 90)
+                                                    {
+                                                        <!-- Show weekly labels for 90 days -->
+                                                        @for (int i = 0; i < ratingTrends.Count; i += 7)
+                                                        {
+                                                            if (i < ratingTrends.Count)
+                                                            {
+                                                                var trend = ratingTrends[i];
+                                                                var leftPercentage = (i * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                                <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2"
+                                                                     style="left: @(leftPercentage)%">
+                                                                    @trend.Date.ToString("MMM d")
+                                                                </div>
+                                                            }
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <!-- Show monthly labels for 180+ days -->
+                                                        var lastMonth = -1;
+                                                        @foreach (var trend in ratingTrends)
+                                                        {
+                                                            var index = ratingTrends.IndexOf(trend);
+                                                            if (trend.Date.Month != lastMonth)
+                                                            {
+                                                                lastMonth = trend.Date.Month;
+                                                                var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                                <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2"
+                                                                     style="left: @(leftPercentage)%">
+                                                                    @trend.Date.ToString("MMM")
+                                                                </div>
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             </div>
                                         </div>
 
-                                        <!-- Line for average rating (overlay) -->
-                                        <div class="absolute w-full flex justify-center" style="bottom: @(heightPercentage + 5)%">
-                                            <div class="w-3/4 h-1 bg-yellow-400 rounded-full"></div>
-                                        </div>
-
-                                        <!-- Date label -->
-                                        <div class="text-xs text-gray-400 mt-2 text-center truncate w-full">
-                                            @trend.Date.ToString("MMM d")
-                                        </div>
-                                        <!-- Ratings count -->
-                                        <div class="text-xs text-purple-300 mt-1 font-semibold">
-                                            @trend.TotalRatings
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-
-                            <!-- Legend -->
-                            <div class="flex justify-between items-center mt-8 pt-4 border-t border-gray-700">
-                                <div class="flex items-center space-x-4">
-                                    <div class="flex items-center">
-                                        <div class="w-4 h-4 bg-gradient-to-t from-purple-700 to-purple-500 rounded mr-2"></div>
-                                        <span class="text-sm text-gray-300">Total Ratings</span>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <div class="w-4 h-1 bg-yellow-400 rounded mr-2"></div>
-                                        <span class="text-sm text-gray-300">Avg Rating</span>
+                                        <!-- Hover Tooltip -->
+                                        @if (hoveredPoint != null)
+                                        {
+                                            <div class="absolute bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg z-50 pointer-events-none border border-gray-700"
+                                                 style="left: @hoveredPoint.Left; top: @hoveredPoint.Top">
+                                                <div class="font-semibold text-yellow-300">@hoveredPoint.Date</div>
+                                                <div class="mt-1">
+                                                    <span class="text-gray-300">Average: </span>
+                                                    <span class="font-bold text-yellow-400">@hoveredPoint.AverageRating.ToString("F1")</span>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <span class="text-gray-300">Ratings: </span>
+                                                    <span class="font-bold text-purple-300">@hoveredPoint.TotalRatings</span>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Stats only (no legend) -->
+                            <div class="flex justify-end items-center mt-4 pt-4 border-t border-gray-700">
                                 <div class="text-sm text-gray-400">
-                                    Period Average: @(ratingTrends.Any() ? ratingTrends.Average(t => t.AverageRating).ToString("F1") : "0.0")
+                                    @{
+                                        var periodAvg = ratingTrends.Any() ? ratingTrends.Average(t => t.AverageRating).ToString("F1") : "0.0";
+                                        var totalPeriodRatings = ratingTrends.Sum(t => t.TotalRatings);
+                                    }
+                                    Period Average: <span class="text-yellow-300 font-semibold">@periodAvg</span>
+                                    • Total Ratings: <span class="text-purple-300 font-semibold">@totalPeriodRatings</span>
                                 </div>
                             </div>
                         }
@@ -365,17 +455,42 @@
         await LoadAnalyticsData();
     }
 
-    private async Task ChangeTimeRange(int days)
-    {
-        daysRange = days;
-        await LoadAnalyticsData();
-    }
-
     private double GetGenrePercentage(int genreRatings)
     {
         if (!genrePopularity.Any()) return 0;
 
         var maxRatings = genrePopularity.Max(g => g.TotalRatings);
         return maxRatings > 0 ? (genreRatings * 100.0 / maxRatings) : 0;
+    }
+
+    private HoveredPoint? hoveredPoint = null;
+
+    private class HoveredPoint
+    {
+        public string Date { get; set; } = "";
+        public double AverageRating { get; set; }
+        public int TotalRatings { get; set; }
+        public string Left { get; set; } = "0px";
+        public string Top { get; set; } = "0px";
+    }
+
+    private void ShowTooltip(object point, RatingTrendDto trend)
+    {
+        var pointObj = point as dynamic;
+        hoveredPoint = new HoveredPoint
+        {
+            Date = trend.Date.ToString("MMM d, yyyy"),
+            AverageRating = trend.AverageRating,
+            TotalRatings = trend.TotalRatings,
+            Left = "calc(" + ((ratingTrends.IndexOf(trend) * 100.0) / Math.Max(1, ratingTrends.Count - 1)) + "% + 20px)",
+            Top = "calc(" + ((5 - trend.AverageRating) * 20) + "% - 40px)"
+        };
+    }
+
+    private async Task ChangeTimeRange(int days)
+    {
+        daysRange = days;
+        hoveredPoint = null;
+        await LoadAnalyticsData();
     }
 }
