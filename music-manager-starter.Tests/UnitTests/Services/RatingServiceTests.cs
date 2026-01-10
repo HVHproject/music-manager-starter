@@ -186,7 +186,7 @@ namespace music_manager_starter.Tests.UnitTests.Services
             // Assert
             Assert.Equal(4.125, summary.Average); // (4.0 + 5.0 + 3.0 + 4.5) / 4 = 4.125
             Assert.Equal(4, summary.TotalRatings);
-            Assert.Equal(4.0, summary.UserRating); // User's own rating
+            Assert.Equal(4.0, summary.UserRating);
         }
 
         [Fact]
