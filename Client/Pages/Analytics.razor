@@ -146,27 +146,15 @@
                     </div>
                 </div>
 
-                <!-- Rating Trends - Simplified Dot Chart -->
+                <!-- Rating Trends -->
                 <div class="glass p-6 rounded-xl">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-xl font-bold">Rating Trends</h2>
                         <div class="flex space-x-2">
-                            <button @onclick="() => ChangeTimeRange(7)"
-                                    class="px-3 py-1 text-sm @(daysRange == 7 ? "bg-purple-700" : "bg-gray-700") rounded">
-                                7d
-                            </button>
-                            <button @onclick="() => ChangeTimeRange(30)"
-                                    class="px-3 py-1 text-sm @(daysRange == 30 ? "bg-purple-700" : "bg-gray-700") rounded">
-                                30d
-                            </button>
-                            <button @onclick="() => ChangeTimeRange(90)"
-                                    class="px-3 py-1 text-sm @(daysRange == 90 ? "bg-purple-700" : "bg-gray-700") rounded">
-                                90d
-                            </button>
-                            <button @onclick="() => ChangeTimeRange(180)"
-                                    class="px-3 py-1 text-sm @(daysRange == 180 ? "bg-purple-700" : "bg-gray-700") rounded">
-                                180d
-                            </button>
+                            <button @onclick="() => ChangeTimeRange(7)" class="px-3 py-1 text-sm @(daysRange == 7 ? "bg-purple-700" : "bg-gray-700") rounded">7d</button>
+                            <button @onclick="() => ChangeTimeRange(30)" class="px-3 py-1 text-sm @(daysRange == 30 ? "bg-purple-700" : "bg-gray-700") rounded">30d</button>
+                            <button @onclick="() => ChangeTimeRange(90)" class="px-3 py-1 text-sm @(daysRange == 90 ? "bg-purple-700" : "bg-gray-700") rounded">90d</button>
+                            <button @onclick="() => ChangeTimeRange(180)" class="px-3 py-1 text-sm @(daysRange == 180 ? "bg-purple-700" : "bg-gray-700") rounded">180d</button>
                         </div>
                     </div>
 
@@ -178,30 +166,29 @@
                                 <div class="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between pb-12">
                                     @for (int i = 5; i >= 1; i--)
                                     {
-                                        <div class="text-xs text-gray-400 text-right pr-2">
-                                            @i
-                                        </div>
+                                        <div class="text-xs text-gray-400 text-right pr-2">@i</div>
                                     }
-                                    <div class="text-xs text-gray-400 text-right pr-2">
-                                        0
-                                    </div>
+                                    <div class="text-xs text-gray-400 text-right pr-2">0</div>
                                 </div>
 
-                                <div class="ml-10 h-full overflow-x-auto px-4" id="graph-scroll-container">
-                                    <div class="relative min-w-full" style="min-width: @(Math.Max(800, ratingTrends.Count * 40))px; height: 100%;">
+                                <div class="ml-10 h-full @(ratingTrends.Count > 10 ? "overflow-x-auto" : "") px-4">
+                                    @{
+                                        var minWidth = ratingTrends.Count > 10 ? Math.Max(800, ratingTrends.Count * 40) : 100;
+                                    }
+                                    <div class="relative" style="min-width: @(minWidth)px; height: 100%;">
 
+                                        <!-- Grid Lines -->
                                         <div class="absolute inset-0" style="height: calc(100% - 40px);">
                                             @for (int i = 0; i <= 5; i++)
                                             {
-                                                <div class="absolute left-0 right-0 border-t border-gray-700"
-                                                     style="top: @(i * 20)%"></div>
+                                                <div class="absolute left-0 right-0 border-t border-gray-700" style="top: @(i * 20)%"></div>
                                             }
                                         </div>
 
+                                        <!-- Points -->
                                         <div class="absolute inset-0" style="height: calc(100% - 40px);">
                                             @{
-                                                var points = ratingTrends.Select((trend, index) =>
-                                                new
+                                                var points = ratingTrends.Select((trend, index) => new
                                                 {
                                                     X = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1)) + "%",
                                                     Y = (5 - trend.AverageRating) * 20 + "%",
@@ -213,94 +200,94 @@
                                             <svg class="absolute inset-0 w-full h-full">
                                                 @foreach (var point in points)
                                                 {
-                                                    <circle cx="@point.X"
-                                                            cy="@point.Y"
-                                                            r="4"
-                                                            fill="#FBBF24"
-                                                            class="data-point hover:r-6 transition-all duration-200 cursor-pointer opacity-80 hover:opacity-100 hover:drop-shadow-lg"
-                                                            @onclick="() => ShowTooltip(point, point.Trend)"
-                                                            @onmouseenter="() => ShowTooltip(point, point.Trend)" />
+                                                    <circle cx="@point.X" cy="@point.Y" r="4" fill="#FBBF24"
+                                                            class="data-point hover:r-6 transition-all duration-200 cursor-pointer"
+                                                            @onclick="() => ShowTooltip(point, point.Trend, point.Index)"
+                                                            @onmouseenter="() => ShowTooltip(point, point.Trend, point.Index)" />
                                                 }
                                             </svg>
                                         </div>
 
-                                        <!-- X-Axis Date Labels - Fixed at bottom of scroll container -->
+                                        <!-- X-Axis Labels -->
                                         <div class="absolute bottom-0 left-0 right-0 h-10 pt-2">
-                                            <div class="relative h-full">
-                                                @if (ratingTrends.Count > 0)
+                                            @if (ratingTrends.Count > 0)
+                                            {
+                                                @if (ratingTrends.Count <= 10)
                                                 {
-                                                    @if (daysRange <= 30)
+                                                    <!-- Show all labels when few points -->
+                                                    @foreach (var trend in ratingTrends)
                                                     {
-                                                        <!-- Show all labels for 30 days or less -->
-                                                        @foreach (var trend in ratingTrends)
+                                                        var index = ratingTrends.IndexOf(trend);
+                                                        var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                        <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2" style="left: @(leftPercentage)%">
+                                                            @(daysRange <= 90 ? trend.Date.ToString("MMM d") : trend.Date.ToString("MMM"))
+                                                        </div>
+                                                    }
+                                                }
+                                                else if (daysRange <= 30)
+                                                {
+                                                    <!-- Show all labels for 30 days -->
+                                                    @foreach (var trend in ratingTrends)
+                                                    {
+                                                        var index = ratingTrends.IndexOf(trend);
+                                                        var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                        <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2" style="left: @(leftPercentage)%">
+                                                            @trend.Date.ToString("MMM d")
+                                                        </div>
+                                                    }
+                                                }
+                                                else if (daysRange <= 90)
+                                                {
+                                                    <!-- Show weekly labels -->
+                                                    @for (int i = 0; i < ratingTrends.Count; i += 7)
+                                                    {
+                                                        if (i < ratingTrends.Count)
                                                         {
-                                                            var index = ratingTrends.IndexOf(trend);
-                                                            var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
-                                                            <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2"
-                                                                 style="left: @(leftPercentage)%">
+                                                            var trend = ratingTrends[i];
+                                                            var leftPercentage = (i * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                            <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2" style="left: @(leftPercentage)%">
                                                                 @trend.Date.ToString("MMM d")
                                                             </div>
                                                         }
                                                     }
-                                                    else if (daysRange <= 90)
+                                                }
+                                                else
+                                                {
+                                                    <!-- Show monthly labels -->
+                                                    var lastMonth = -1;
+                                                    @foreach (var trend in ratingTrends)
                                                     {
-                                                        <!-- Show weekly labels for 90 days -->
-                                                        @for (int i = 0; i < ratingTrends.Count; i += 7)
+                                                        var index = ratingTrends.IndexOf(trend);
+                                                        if (trend.Date.Month != lastMonth)
                                                         {
-                                                            if (i < ratingTrends.Count)
-                                                            {
-                                                                var trend = ratingTrends[i];
-                                                                var leftPercentage = (i * 100.0 / Math.Max(1, ratingTrends.Count - 1));
-                                                                <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2"
-                                                                     style="left: @(leftPercentage)%">
-                                                                    @trend.Date.ToString("MMM d")
-                                                                </div>
-                                                            }
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        <!-- Show monthly labels for 180+ days -->
-                                                        var lastMonth = -1;
-                                                        @foreach (var trend in ratingTrends)
-                                                        {
-                                                            var index = ratingTrends.IndexOf(trend);
-                                                            if (trend.Date.Month != lastMonth)
-                                                            {
-                                                                lastMonth = trend.Date.Month;
-                                                                var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
-                                                                <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2"
-                                                                     style="left: @(leftPercentage)%">
-                                                                    @trend.Date.ToString("MMM")
-                                                                </div>
-                                                            }
+                                                            lastMonth = trend.Date.Month;
+                                                            var leftPercentage = (index * 100.0 / Math.Max(1, ratingTrends.Count - 1));
+                                                            <div class="absolute text-xs text-gray-400 text-center whitespace-nowrap -translate-x-1/2" style="left: @(leftPercentage)%">
+                                                                @trend.Date.ToString("MMM")
+                                                            </div>
                                                         }
                                                     }
                                                 }
-                                            </div>
+                                            }
                                         </div>
 
-                                        <!-- Hover Tooltip -->
+                                        <!-- Tooltip -->
                                         @if (hoveredPoint != null)
                                         {
-                                            <div class="absolute bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg z-50 pointer-events-none border border-gray-700"
-                                                 style="left: @hoveredPoint.Left; top: @hoveredPoint.Top">
+                                            var shouldShowLeft = hoveredPoint.Index >= ratingTrends.Count / 2;
+                                            <div class="absolute bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg z-50 border border-gray-700"
+                                                 style="left: @(shouldShowLeft ? "calc(" + hoveredPoint.Left + " - 150px)" : hoveredPoint.Left);
+                            top: @hoveredPoint.Top">
                                                 <div class="font-semibold text-yellow-300">@hoveredPoint.Date</div>
-                                                <div class="mt-1">
-                                                    <span class="text-gray-300">Average: </span>
-                                                    <span class="font-bold text-yellow-400">@hoveredPoint.AverageRating.ToString("F1")</span>
-                                                </div>
-                                                <div class="mt-1">
-                                                    <span class="text-gray-300">Ratings: </span>
-                                                    <span class="font-bold text-purple-300">@hoveredPoint.TotalRatings</span>
-                                                </div>
+                                                <div>Average: <span class="font-bold text-yellow-400">@hoveredPoint.AverageRating.ToString("F1")</span></div>
+                                                <div>Ratings: <span class="font-bold text-purple-300">@hoveredPoint.TotalRatings</span></div>
                                             </div>
                                         }
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Stats only (no legend) -->
+                            <!-- Stats -->
                             <div class="flex justify-end items-center mt-4 pt-4 border-t border-gray-700">
                                 <div class="text-sm text-gray-400">
                                     @{
@@ -319,7 +306,6 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
                                 <p class="text-lg">No rating data available</p>
-                                <p class="text-sm mt-2">Start rating songs to see trends</p>
                             </div>
                         }
                     </div>
@@ -473,9 +459,10 @@
         public int TotalRatings { get; set; }
         public string Left { get; set; } = "0px";
         public string Top { get; set; } = "0px";
+        public int Index { get; set; }
     }
 
-    private void ShowTooltip(object point, RatingTrendDto trend)
+    private void ShowTooltip(object point, RatingTrendDto trend, int index)
     {
         var pointObj = point as dynamic;
         hoveredPoint = new HoveredPoint
@@ -484,7 +471,8 @@
             AverageRating = trend.AverageRating,
             TotalRatings = trend.TotalRatings,
             Left = "calc(" + ((ratingTrends.IndexOf(trend) * 100.0) / Math.Max(1, ratingTrends.Count - 1)) + "% + 20px)",
-            Top = "calc(" + ((5 - trend.AverageRating) * 20) + "% - 40px)"
+            Top = "calc(" + ((5 - trend.AverageRating) * 20) + "% - 40px)",
+            Index = index
         };
     }
 

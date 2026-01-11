@@ -61,30 +61,36 @@ namespace music_manager_starter.Server.Services
         /// <inheritdoc/>
         public async Task<List<RatingTrendDto>> GetRatingTrendsAsync(DateTime? startDate = null, DateTime? endDate = null)
         {
+            // Default to last 180 days if not specified
             startDate ??= DateTime.UtcNow.AddMonths(-6);
             endDate ??= DateTime.UtcNow;
 
-            // Get ALL ratings first, then filter in memory
+            // Convert to UTC dates for comparison
+            var utcStartDate = startDate.Value.Date.ToUniversalTime();
+            var utcEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+
+            Console.WriteLine($"Getting trends from {utcStartDate:yyyy-MM-dd} to {utcEndDate:yyyy-MM-dd}");
+
+            // Get all ratings and filter/group in memory (client evaluation)
             var allRatings = await _context.Ratings.ToListAsync();
 
-            // Filter by date in memory
             var filteredRatings = allRatings
-                .Where(r => r.CreatedAt.UtcDateTime >= startDate.Value &&
-                           r.CreatedAt.UtcDateTime <= endDate.Value)
+                .Where(r => r.CreatedAt.UtcDateTime >= utcStartDate && r.CreatedAt.UtcDateTime <= utcEndDate)
                 .ToList();
 
-            // Process on client side
             var trends = filteredRatings
-                .GroupBy(r => r.CreatedAt.Date) // Use Date property of DateTimeOffset
+                .GroupBy(r => r.CreatedAt.Date)
                 .Select(g => new RatingTrendDto
                 {
                     Date = g.Key,
-                    AverageRating = (double)g.Average(r => r.Value), // Cast to double
+                    AverageRating = (double)g.Average(r => r.Value),
                     TotalRatings = g.Count(),
                     TotalSongsRated = g.Select(r => r.SongId).Distinct().Count()
                 })
                 .OrderBy(t => t.Date)
                 .ToList();
+
+            Console.WriteLine($"Found {trends.Count} trend days with total {trends.Sum(t => t.TotalRatings)} ratings");
 
             return trends;
         }
