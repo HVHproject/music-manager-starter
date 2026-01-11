@@ -54,7 +54,8 @@ namespace music_manager_starter.Server.Services
                     Genre = s.Genre,
                     AverageRating = average,
                     UserRating = (double?)userRating,
-                    TotalRatings = totalRatings
+                    TotalRatings = totalRatings,
+                    YearReleased = s.YearReleased
                 };
             }).ToList();
 
