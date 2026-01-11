@@ -57,5 +57,16 @@ namespace music_manager_starter.Server.Controllers
             await _songService.AddSongAsync(song);
             return Ok();
         }
+
+
+        [HttpGet("search")]
+        public async Task<ActionResult<SongSearchResponse>> SearchSongs(
+    [FromQuery] SongSearchRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _songService.SearchSongsAsync(request, userId);
+            return Ok(result);
+        }
+
     }
 }

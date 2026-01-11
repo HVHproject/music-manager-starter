@@ -20,5 +20,10 @@ namespace music_manager_starter.Server.Services
         /// <param name="song">The song object to add</param>
         /// <returns>A task representing the asynchronous operation</returns>
         Task AddSongAsync(Song song);
+
+        Task<SongSearchResponse> SearchSongsAsync(
+            SongSearchRequest request,
+            string? userId
+        );
     }
 }
