@@ -16,7 +16,7 @@
         /// </summary>
         public Guid? Cursor { get; set; }
 
-        public int PageSize { get; set; } = 20;
+        public int PageSize { get; set; } = 8;
     }
 
     public sealed class SongSearchResponse
