@@ -36,6 +36,7 @@ namespace music_manager_starter.Server.Services
                     Artist = s.Artist,
                     Album = s.Album,
                     Genre = s.Genre,
+                    YearReleased = s.YearReleased
                 })
                 .ToListAsync();
 
@@ -56,6 +57,7 @@ namespace music_manager_starter.Server.Services
                 Artist = song.Artist,
                 Album = song.Album,
                 Genre = song.Genre,
+                YearReleased = song.YearReleased
             };
 
             _context.Songs.Add(entity);

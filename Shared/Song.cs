@@ -14,6 +14,8 @@ namespace music_manager_starter.Shared
         public string Album { get; set; } = string.Empty;
         public string Genre { get; set; } = string.Empty;
 
+        public int? YearReleased { get; set; }
+
         public double? AverageRating { get; set; }
         public double? UserRating { get; set; }
         public int TotalRatings { get; set; }

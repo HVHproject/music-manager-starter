@@ -29,6 +29,15 @@
             <InputText @bind-Value="newSong.Genre" class="mt-1 block w-full p-2 border rounded" />
         </div>
 
+        <div class="mb-4">
+            <label class="block text-gray-200">Year Released</label>
+            <InputNumber @bind-Value="newSong.YearReleased"
+                         class="mt-1 block w-full p-2 border rounded"
+                         Min="1800"
+                         Max="2100" />
+        </div>
+
+
         <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded">Add Song</button>
     </EditForm>
 
