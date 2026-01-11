@@ -84,16 +84,32 @@ namespace music_manager_starter.Server.Services
         }
 
         public async Task<SongSearchResponse> SearchSongsAsync(
-    SongSearchRequest request,
-    string? userId)
+     SongSearchRequest request,
+     string? userId)
         {
-            IQueryable<Data.Models.Song> query = _context.Songs.AsNoTracking();
+            // Get all song IDs that meet the rating criteria
+            List<Guid> ratedSongIds = new();
+
+            if (request.MinRating.HasValue)
+            {
+                var minRatingDecimal = (decimal)request.MinRating.Value;
+
+                ratedSongIds = await _context.Ratings
+                    .AsNoTracking()
+                    .GroupBy(r => r.SongId)
+                    .Where(g => g.Average(r => (double)r.Value) >= request.MinRating.Value)
+                    .Select(g => g.Key)
+                    .ToListAsync();
+            }
+
+            // Base song query
+            IQueryable<Data.Models.Song> songQuery = _context.Songs.AsNoTracking();
 
             // Text search
             if (!string.IsNullOrWhiteSpace(request.Query))
             {
                 var q = request.Query.ToLower();
-                query = query.Where(s =>
+                songQuery = songQuery.Where(s =>
                     s.Title.ToLower().Contains(q) ||
                     s.Artist.ToLower().Contains(q) ||
                     s.Album.ToLower().Contains(q));
@@ -101,65 +117,132 @@ namespace music_manager_starter.Server.Services
 
             // Filters
             if (!string.IsNullOrWhiteSpace(request.Genre))
-                query = query.Where(s => s.Genre == request.Genre);
+                songQuery = songQuery.Where(s => s.Genre == request.Genre);
 
             if (request.MinYear.HasValue)
-                query = query.Where(s => s.YearReleased >= request.MinYear);
+                songQuery = songQuery.Where(s => s.YearReleased >= request.MinYear);
 
             if (request.MaxYear.HasValue)
-                query = query.Where(s => s.YearReleased <= request.MaxYear);
+                songQuery = songQuery.Where(s => s.YearReleased <= request.MaxYear);
+
+            if (request.MinRating.HasValue)
+            {
+                if (ratedSongIds.Any())
+                {
+                    songQuery = songQuery.Where(s => ratedSongIds.Contains(s.Id));
+                }
+                else
+                {
+                    return new SongSearchResponse
+                    {
+                        Results = new List<Shared.Song>(),
+                        NextCursor = null
+                    };
+                }
+            }
 
             // Keyset pagination
             if (request.Cursor.HasValue)
-                query = query.Where(s => s.Id.CompareTo(request.Cursor.Value) > 0);
+                songQuery = songQuery.Where(s => s.Id.CompareTo(request.Cursor.Value) > 0);
 
-            query = query
+            var songs = await songQuery
                 .OrderBy(s => s.Id)
-                .Take(request.PageSize + 1);
-
-            var songs = await query.ToListAsync();
+                .Take(request.PageSize + 1)
+                .ToListAsync();
 
             var songIds = songs.Select(s => s.Id).ToList();
 
-            var ratings = await _context.Ratings
+            if (!songIds.Any())
+            {
+                return new SongSearchResponse
+                {
+                    Results = new List<Shared.Song>(),
+                    NextCursor = null
+                };
+            }
+
+            // Get all ratings for these songs
+            var allRatings = await _context.Ratings
                 .AsNoTracking()
                 .Where(r => songIds.Contains(r.SongId))
                 .ToListAsync();
 
+            // Group ratings by song and calculate averages
+            var ratingsBySong = allRatings
+                .GroupBy(r => r.SongId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        Ratings = g.ToList(),
+                        Average = g.Any() ? (double?)g.Average(r => (double)r.Value) : null,
+                        Count = g.Count()
+                    });
+
+            // Get user specific ratings
+            Dictionary<Guid, double?> userRatings = new();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var userRatingsList = await _context.Ratings
+                    .AsNoTracking()
+                    .Where(r => songIds.Contains(r.SongId) && r.UserId == userId)
+                    .Select(r => new { r.SongId, r.Value })
+                    .ToListAsync();
+
+                userRatings = userRatingsList
+                    .ToDictionary(r => r.SongId, r => (double?)r.Value);
+            }
+
+            // Build results
             var results = songs
                 .Take(request.PageSize)
                 .Select(s =>
                 {
-                    var songRatings = ratings.Where(r => r.SongId == s.Id).ToList();
-                    var total = songRatings.Count;
-                    var avg = total > 0 ? (double?)songRatings.Average(r => r.Value) : null;
-                    var userRating = !string.IsNullOrEmpty(userId)
-                        ? songRatings.FirstOrDefault(r => r.UserId == userId)?.Value
-                        : null;
-
-                    return new Shared.Song
+                    Shared.Song result = new()
                     {
                         Id = s.Id,
                         Title = s.Title,
                         Artist = s.Artist,
                         Album = s.Album,
                         Genre = s.Genre,
-                        YearReleased = s.YearReleased,
-                        AverageRating = avg,
-                        UserRating = (double?)userRating,
-                        TotalRatings = total
+                        YearReleased = s.YearReleased
                     };
+
+                    if (ratingsBySong.TryGetValue(s.Id, out var songRatings))
+                    {
+                        result.AverageRating = songRatings.Average;
+                        result.TotalRatings = songRatings.Count;
+
+                        if (userRatings.TryGetValue(s.Id, out var userRating))
+                        {
+                            result.UserRating = userRating;
+                        }
+                        else
+                        {
+                            result.UserRating = null;
+                        }
+                    }
+                    else
+                    {
+                        result.AverageRating = null;
+                        result.TotalRatings = 0;
+                        result.UserRating = null;
+                    }
+
+                    return result;
                 })
                 .ToList();
+
+            // Determine next cursor
+            bool hasNextPage = songs.Count > request.PageSize;
 
             return new SongSearchResponse
             {
                 Results = results,
-                NextCursor = songs.Count > request.PageSize
-                    ? songs.Last().Id
+                NextCursor = hasNextPage && results.Any()
+                    ? results.Last().Id
                     : null
             };
         }
-
     }
 }
