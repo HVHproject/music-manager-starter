@@ -14,6 +14,7 @@ builder.Services.AddDbContext<DataDbContext>(options => options.UseSqlite(builde
 
 builder.Services.AddScoped<IRatingService, RatingService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<ISongService, SongService>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
