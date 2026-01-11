@@ -1,13 +1,52 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Nav
+
+@code {
+    private string searchText = string.Empty;
+    private Timer? debounceTimer;
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? string.Empty;
+
+        debounceTimer?.Dispose();
+        debounceTimer = new Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                if (string.IsNullOrWhiteSpace(searchText))
+                    return;
+
+                var uri = Nav.ToBaseRelativePath(Nav.Uri);
+
+                if (!uri.StartsWith("search"))
+                {
+                    Nav.NavigateTo($"/search?q={Uri.EscapeDataString(searchText)}");
+                }
+                else
+                {
+                    Nav.NavigateTo($"/search?q={Uri.EscapeDataString(searchText)}", replace: true);
+                }
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+}
 
 
 <div class="flex h-screen">
     <NavMenu />
-    <div class="flex-1 flex flex-col bg-gray-800 md:ml-64 transition-all duration-300">
+
+    <div class="flex-1 flex flex-col bg-gray-800 md:ml-64">
         <div class="top-bar px-6 py-4 bg-gray-900 text-white flex items-center justify-between">
             <h1 class="text-xl font-semibold">Music</h1>
+
             <div class="relative">
-                <input type="text" placeholder="Search..." class="bg-gray-700 text-white px-4 py-2 rounded-full focus:outline-none">
+                <input type="text"
+                       placeholder="Search..."
+                       class="bg-gray-700 text-white px-4 py-2 rounded-full focus:outline-none"
+                       value="@searchText"
+                       @oninput="OnSearchInput" />
+
                 <span class="absolute right-3 top-3 text-gray-400">
                     <i class="fas fa-search"></i>
                 </span>
