@@ -1,34 +1,27 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager Nav
+@inject IJSRuntime JS
+
 
 @code {
     private string searchText = string.Empty;
     private Timer? debounceTimer;
 
-    private void OnSearchInput(ChangeEventArgs e)
+    private void OnSearchInput()
     {
-        searchText = e.Value?.ToString() ?? string.Empty;
-
         debounceTimer?.Dispose();
         debounceTimer = new Timer(_ =>
         {
-            InvokeAsync(() =>
+            InvokeAsync(async () =>
             {
-                if (string.IsNullOrWhiteSpace(searchText))
-                    return;
-
+                var encoded = Uri.EscapeDataString(searchText ?? string.Empty);
                 var uri = Nav.ToBaseRelativePath(Nav.Uri);
 
-                if (!uri.StartsWith("search"))
-                {
-                    Nav.NavigateTo($"/search?q={Uri.EscapeDataString(searchText)}");
-                }
-                else
-                {
-                    Nav.NavigateTo($"/search?q={Uri.EscapeDataString(searchText)}", replace: true);
-                }
+                Nav.NavigateTo($"/search?q={encoded}", replace: uri.StartsWith("search"));
+
+                await JS.InvokeVoidAsync("focusSearchInput");
             });
-        }, null, 300, Timeout.Infinite);
+        }, null, 500, Timeout.Infinite);
     }
 }
 
@@ -42,10 +35,12 @@
 
             <div class="relative">
                 <input type="text"
+                       id="global-search-input"
                        placeholder="Search..."
                        class="bg-gray-700 text-white px-4 py-2 rounded-full focus:outline-none"
-                       value="@searchText"
-                       @oninput="OnSearchInput" />
+                       @bind-value="searchText"
+                       @bind-value:event="oninput"
+                       @bind-value:after="OnSearchInput" />
 
                 <span class="absolute right-3 top-3 text-gray-400">
                     <i class="fas fa-search"></i>
