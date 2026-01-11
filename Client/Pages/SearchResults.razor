@@ -2,6 +2,7 @@
 @inject HttpClient Http
 @inject NavigationManager Nav
 @using music_manager_starter.Shared
+@using music_manager_starter.Client.Components
 
 @code {
     private List<Song>? results;
@@ -55,12 +56,79 @@
         return new MarkupString(highlighted);
     }
 
+    private async Task SubmitRating(Guid songId, double rating)
+    {
+        // Find the song and store old values
+        var songToUpdate = results?.FirstOrDefault(s => s.Id == songId);
+
+        if (songToUpdate == null) return;
+
+        // Store old values for rollback
+        var oldUserRating = songToUpdate.UserRating;
+        var oldAverageRating = songToUpdate.AverageRating;
+        var oldTotalRatings = songToUpdate.TotalRatings;
+
+        // Optimistic update - important: update ALL related properties
+        songToUpdate.UserRating = rating;
+
+        if (songToUpdate.TotalRatings > 0 && songToUpdate.AverageRating.HasValue)
+        {
+            var newTotal = songToUpdate.AverageRating.Value * songToUpdate.TotalRatings;
+            if (oldUserRating.HasValue)
+            {
+                newTotal -= oldUserRating.Value;
+            }
+            newTotal += rating;
+            songToUpdate.AverageRating = newTotal / songToUpdate.TotalRatings;
+        }
+
+        StateHasChanged();
+
+        try
+        {
+            await Http.PostAsJsonAsync($"api/ratings/{songId}", rating);
+
+            await FetchUpdatedSongRating(songId);
+        }
+        catch
+        {
+            if (songToUpdate != null)
+            {
+                songToUpdate.UserRating = oldUserRating;
+                songToUpdate.AverageRating = oldAverageRating;
+                songToUpdate.TotalRatings = oldTotalRatings;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task FetchUpdatedSongRating(Guid songId)
+    {
+        try
+        {
+            var updatedSong = await Http.GetFromJsonAsync<Song>($"api/songs/{songId}/rating-info");
+
+            var songToUpdate = results?.FirstOrDefault(s => s.Id == songId);
+            if (songToUpdate != null && updatedSong != null)
+            {
+                songToUpdate.AverageRating = updatedSong.AverageRating;
+                songToUpdate.UserRating = updatedSong.UserRating;
+                songToUpdate.TotalRatings = updatedSong.TotalRatings;
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching updated rating: {ex.Message}");
+        }
+    }
+
     public void Dispose()
     {
         Nav.LocationChanged -= OnLocationChanged;
     }
 }
-
 
 <div class="p-4 bg-gray-900/50 h-full">
     <h2 class="text-xl font-semibold text-white mb-4">Search Results</h2>
@@ -81,16 +149,38 @@
     }
     else
     {
+        <div class="p-3 text-gray-300 rounded mb-2 flex flex-row gap-2 justify-between font-bold">
+            <div class="w-full">
+                Song
+            </div>
+            <div class="w-64">
+                Genre
+            </div>
+            <div class="w-48">
+                Rating
+            </div>
+        </div>
         foreach (var song in results)
         {
-            <div class="p-3 bg-gray-700 text-gray-300 rounded mb-2">
-                <strong>@Highlight(song.Title)</strong>
-                <div class="text-sm text-gray-300">
-                    @Highlight(song.Artist) • @Highlight(song.Album)
+            <div class="p-3 bg-gray-700 text-gray-300 rounded mb-2 flex flex-row gap-2 justify-between">
+                <div class="w-full">
+                    <strong>@Highlight(song.Title) - @Highlight(song.Artist)</strong>
+                    <div class="text-sm text-gray-300">
+                        @Highlight(song.Album) @if(song.YearReleased.HasValue) {
+                        <span> • <i>@song.YearReleased</i></span>
+                    }
                 </div>
             </div>
-        }
+            <div class="w-64">
+                @song.Genre
+            </div>
+            <div class="w-48">
+                <RatingStars AverageRating="@(song.AverageRating ?? 0)"
+                             UserRating="@song.UserRating"
+                             OnRatingSelected="rating => SubmitRating(song.Id, rating)" />
+            </div>
+        </div>
     }
+        }
 </div>
-
 
