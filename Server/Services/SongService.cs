@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using music_manager_starter.Data;
 using music_manager_starter.Shared;
+using System.Security.Claims;
 
 namespace music_manager_starter.Server.Services
 {
@@ -25,19 +26,37 @@ namespace music_manager_starter.Server.Services
         /// </summary>
         /// <param name="userId">Optional user ID for filtering songs (currently not used)</param>
         /// <returns>A list of song objects without tracking for read-only operations</returns>
-        public async Task<List<Song>> GetSongsAsync(string? userId)
+        public async Task<List<Shared.Song>> GetSongsAsync(string? userId)
         {
-            var songs = await _context.Songs
+            // This is essentially what your old controller was doing
+            var songsList = await _context.Songs
                 .AsNoTracking()
-                .Select(s => new Song
+                .ToListAsync();
+
+            var ratingsList = await _context.Ratings
+                .AsNoTracking()
+                .ToListAsync();
+
+            var songs = songsList.Select(s =>
+            {
+                var songRatings = ratingsList.Where(r => r.SongId == s.Id).ToList();
+                var totalRatings = songRatings.Count;
+                var average = totalRatings > 0 ? (double)songRatings.Average(r => r.Value) : (double?)null;
+                var userRating = !string.IsNullOrEmpty(userId) ?
+                    songRatings.FirstOrDefault(r => r.UserId == userId)?.Value : null;
+
+                return new Shared.Song
                 {
                     Id = s.Id,
                     Title = s.Title,
                     Artist = s.Artist,
                     Album = s.Album,
                     Genre = s.Genre,
-                })
-                .ToListAsync();
+                    AverageRating = average,
+                    UserRating = (double?)userRating,
+                    TotalRatings = totalRatings
+                };
+            }).ToList();
 
             return songs;
         }
