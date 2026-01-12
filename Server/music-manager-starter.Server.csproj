@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\music-manager-starter.Client.csproj" />
-    <ProjectReference Include="..\music-manager-start.Data\music-manager-starter.Data.csproj" />
+    <ProjectReference Include="..\music-manager-starter.Data\music-manager-starter.Data.csproj" />
     <ProjectReference Include="..\Shared\music-manager-starter.Shared.csproj" />
   </ItemGroup>
 
