@@ -227,12 +227,12 @@
         <select class="bg-gray-700 text-white px-2 py-1 rounded"
                 @bind="genre"
                 @bind:after="UpdateFilters">
-    <option value="">All Genres</option>
-    @foreach (var g in Genres)
-    {
-        <option value="@g">@g</option>
-    }
-</select>
+            <option value="">All Genres</option>
+            @foreach (var g in Genres)
+            {
+                <option value="@g">@g</option>
+            }
+        </select>
 
         <input type="number"
                class="bg-gray-700 text-white px-2 py-1 rounded"
@@ -241,21 +241,21 @@
                @bind:after="UpdateFilters" />
 
 
-<input type="number"
-       class="bg-gray-700 text-white px-2 py-1 rounded"
-       placeholder="Max Year"
-       @bind="maxYear"
-       @bind:after="UpdateFilters" />
+        <input type="number"
+               class="bg-gray-700 text-white px-2 py-1 rounded"
+               placeholder="Max Year"
+               @bind="maxYear"
+               @bind:after="UpdateFilters" />
 
-<select class="bg-gray-700 text-white px-2 py-1 rounded"
-        @bind="minRating"
-        @bind:after="UpdateFilters">
-    <option value="">Min Rating</option>
-    @for (double r = 0.5; r <= 5; r += 0.5)
-    {
-        <option value="@r">@r.ToString("0.0")+</option>
-    }
-</select>
+        <select class="bg-gray-700 text-white px-2 py-1 rounded"
+                @bind="minRating"
+                @bind:after="UpdateFilters">
+            <option value="">Min Rating</option>
+            @for (double r = 0.5; r <= 5; r += 0.5)
+            {
+                <option value="@r">@r.ToString("0.0")+</option>
+            }
+        </select>
     </div>
 
     @if (results == null)
