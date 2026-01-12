@@ -21,11 +21,7 @@ namespace music_manager_starter.Server.Services
             _context = context;
         }
 
-        /// <summary>
-        /// Retrieves a list of songs from the database
-        /// </summary>
-        /// <param name="userId">Optional user ID for filtering songs (currently not used)</param>
-        /// <returns>A list of song objects without tracking for read-only operations</returns>
+        /// <inheritdoc/>
         public async Task<List<Shared.Song>> GetSongsAsync(string? userId)
         {
             // This is essentially what your old controller was doing
@@ -62,11 +58,7 @@ namespace music_manager_starter.Server.Services
             return songs;
         }
 
-        /// <summary>
-        /// Adds a new song to the database
-        /// </summary>
-        /// <param name="song">The song object containing song details to add</param>
-        /// <returns>A task representing the asynchronous operation</returns>
+        /// <inheritdoc/>
         public async Task AddSongAsync(Song song)
         {
             var entity = new Data.Models.Song
@@ -83,6 +75,7 @@ namespace music_manager_starter.Server.Services
             await _context.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task<SongSearchResponse> SearchSongsAsync(
      SongSearchRequest request,
      string? userId)

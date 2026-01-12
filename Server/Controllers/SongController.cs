@@ -58,7 +58,16 @@ namespace music_manager_starter.Server.Controllers
             return Ok();
         }
 
-
+        /// <summary>
+        /// Searches for songs using various criteria including text search, filters, and rating requirements
+        /// </summary>
+        /// <param name="request">The search request containing query parameters, filters, and pagination settings</param>
+        /// <returns>
+        /// HTTP 200 OK with a SongSearchResponse containing matching songs and pagination cursor if successful
+        /// </returns>
+        /// <remarks>
+        /// This endpoint extracts the user ID from the authentication token to include user-specific ratings in the results
+        /// </remarks>
         [HttpGet("search")]
         public async Task<ActionResult<SongSearchResponse>> SearchSongs(
     [FromQuery] SongSearchRequest request)
