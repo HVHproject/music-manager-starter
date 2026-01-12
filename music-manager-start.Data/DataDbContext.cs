@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using music_manager_start.Data.Models;
 using music_manager_starter.Data.Models;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,8 @@ namespace music_manager_starter.Data
 
         public DbSet<Song> Songs { get; set; }
         public DbSet<Rating> Ratings { get; set; }
+        public DbSet<Playlist> Playlists { get; set; }
+        public DbSet<PlaylistSong> PlaylistSongs { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -53,6 +56,23 @@ namespace music_manager_starter.Data
 
                 // Performance index for analytics
                 entity.HasIndex(r => r.SongId);
+            });
+
+            modelBuilder.Entity<PlaylistSong>(entity =>
+            {
+                entity.HasKey(ps => new { ps.PlaylistId, ps.SongId });
+
+                entity.HasOne(ps => ps.Playlist)
+                      .WithMany(p => p.PlaylistSongs)
+                      .HasForeignKey(ps => ps.PlaylistId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ps => ps.Song)
+                      .WithMany()
+                      .HasForeignKey(ps => ps.SongId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(ps => new { ps.PlaylistId, ps.OrderIndex });
             });
         }
 
