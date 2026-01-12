@@ -8,7 +8,7 @@ namespace music_manager_start.Data.Models
         public Guid PlaylistId { get; set; }
         public Playlist Playlist { get; set; } = null!;
 
-        public int SongId { get; set; }
+        public Guid SongId { get; set; }
         public Song Song { get; set; } = null!;
 
         public int OrderIndex { get; set; }
