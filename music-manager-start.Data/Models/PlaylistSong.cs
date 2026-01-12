@@ -1,0 +1,18 @@
+﻿using music_manager_starter.Data.Models;
+using System;
+
+namespace music_manager_start.Data.Models
+{
+    public sealed class PlaylistSong
+    {
+        public Guid PlaylistId { get; set; }
+        public Playlist Playlist { get; set; } = null!;
+
+        public int SongId { get; set; }
+        public Song Song { get; set; } = null!;
+
+        public int OrderIndex { get; set; }
+
+        public DateTime AddedAt { get; set; } = DateTime.UtcNow;
+    }
+}
