@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace music_manager_start.Data.Models
+namespace music_manager_starter.Data.Models
 {
     public sealed class Playlist
     {

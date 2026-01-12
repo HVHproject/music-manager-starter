@@ -1,7 +1,6 @@
-﻿using music_manager_starter.Data.Models;
-using System;
+﻿using System;
 
-namespace music_manager_start.Data.Models
+namespace music_manager_starter.Data.Models
 {
     public sealed class PlaylistSong
     {

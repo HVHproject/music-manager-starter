@@ -1,4 +1,4 @@
-﻿using music_manager_start.Data.Models;
+﻿using music_manager_starter.Data.Models;
 
 namespace music_manager_starter.Server.Repositories
 {

@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "music-manager-starter.Clien
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "music-manager-starter.Shared", "Shared\music-manager-starter.Shared.csproj", "{8712C3C4-13F8-4094-9366-2BB35ADA17FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "music-manager-start.Data", "music-manager-start.Data\music-manager-start.Data.csproj", "{C2A54D61-66F8-4690-AF4C-FDD117B329BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "music-manager-starter.Data", "music-manager-starter.Data\music-manager-starter.Data.csproj", "{C2A54D61-66F8-4690-AF4C-FDD117B329BE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "music-manager-starter.Tests", "music-manager-starter.Tests\music-manager-starter.Tests.csproj", "{E2A6F4B2-DCE9-42A3-8B8A-45F96EC8728D}"
 EndProject
