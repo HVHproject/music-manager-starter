@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using music_manager_starter.Data;
 using music_manager_starter.Server.Middleware;
+using music_manager_starter.Server.Repositories;
 using music_manager_starter.Server.Services;
 using System.Security.AccessControl;
 
@@ -15,6 +16,8 @@ builder.Services.AddDbContext<DataDbContext>(options => options.UseSqlite(builde
 builder.Services.AddScoped<IRatingService, RatingService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<ISongService, SongService>();
+builder.Services.AddScoped<IPlaylistService, PlaylistService>();
+builder.Services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
