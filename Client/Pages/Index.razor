@@ -11,23 +11,68 @@
     {
         songs = await Http.GetFromJsonAsync<List<Song>>("api/songs");
     }
-}
 
-@code {
-    private async Task SubmitRating(Guid songId, double rating)
+    private async Task SubmitRating(Guid songId, double newRating)
     {
-        await Http.PostAsJsonAsync(
-            $"api/ratings/{songId}",
-            rating
+        if (songs == null)
+            return;
+
+        var song = songs.FirstOrDefault(s => s.Id == songId);
+        if (song == null)
+            return;
+
+        var oldUserRating = song.UserRating;
+        var oldAverage = song.AverageRating;
+        var oldTotal = song.TotalRatings;
+
+        song.AverageRating = RecalculateAverage(
+            song.AverageRating,
+            song.TotalRatings,
+            song.UserRating,
+            newRating
         );
 
-        await ReloadSongs();
+        if (!song.UserRating.HasValue)
+        {
+            song.TotalRatings += 1;
+        }
+
+        song.UserRating = newRating;
+        StateHasChanged();
+
+        try
+        {
+            await Http.PostAsJsonAsync(
+                $"api/ratings/{songId}",
+                newRating
+            );
+        }
+        catch
+        {
+            song.UserRating = oldUserRating;
+            song.AverageRating = oldAverage;
+            song.TotalRatings = oldTotal;
+            StateHasChanged();
+        }
     }
 
-    private async Task ReloadSongs()
+    private double RecalculateAverage(
+        double? currentAverage,
+        int totalRatings,
+        double? oldUserRating,
+        double newUserRating)
     {
-        songs = await Http.GetFromJsonAsync<List<Song>>("api/songs");
-        StateHasChanged();
+        if (!currentAverage.HasValue || totalRatings == 0)
+            return newUserRating;
+
+        if (!oldUserRating.HasValue)
+        {
+            return ((currentAverage.Value * totalRatings) + newUserRating)
+                   / (totalRatings + 1);
+        }
+
+        return currentAverage.Value
+               + (newUserRating - oldUserRating.Value) / totalRatings;
     }
 }
 
@@ -41,17 +86,22 @@
             {
                 <div class="glass p-6 border border-gray-300 rounded-lg text-white transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer">
                     <h3 class="text-xl font-semibold mb-2">@song.Title</h3>
-                    <p class="text-md">Artist: <span class="font-light">@song.Artist</span></p>
+
+                    <p class="text-md">
+                        Artist: <span class="font-light">@song.Artist</span>
+                    </p>
+
                     <RatingStars AverageRating="@(song.AverageRating ?? 0)"
                                  UserRating="@song.UserRating"
                                  OnRatingSelected="rating => SubmitRating(song.Id, rating)" />
-
                 </div>
             }
         }
         else
         {
-            <div class="col-span-1 text-center text-gray-400">No songs found.</div>
+            <div class="col-span-1 text-center text-gray-400">
+                No songs found.
+            </div>
         }
     </div>
 </div>
