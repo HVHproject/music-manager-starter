@@ -1,4 +1,5 @@
 ﻿using music_manager_starter.Data.Models;
+using music_manager_starter.Shared;
 
 namespace music_manager_starter.Server.Services
 {
@@ -6,9 +7,9 @@ namespace music_manager_starter.Server.Services
     {
         Task<Guid> CreatePlaylistAsync(string name, string userId);
 
-        Task<IReadOnlyList<Playlist>> GetAllPlaylistsAsync(string userId);
+        Task<IReadOnlyList<PlaylistDto>> GetAllPlaylistsAsync(string userId);
 
-        Task<Playlist> GetPlaylistAsync(Guid playlistId, string userId);
+        Task<PlaylistDto> GetPlaylistAsync(Guid playlistId, string userId);
 
         Task DeletePlaylistAsync(Guid playlistId, string userId);
 

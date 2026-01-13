@@ -17,17 +17,8 @@ namespace music_manager_starter.Shared
     {
         public Guid PlaylistId { get; set; }
         public Guid SongId { get; set; }
-        public SongDto Song { get; set; } = null!;
+        public Song Song { get; set; } = null!;
         public int OrderIndex { get; set; }
         public DateTime AddedAt { get; set; }
-    }
-
-    public sealed class SongDto
-    {
-        public Guid Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Artist { get; set; } = string.Empty;
-        public string Album { get; set; } = string.Empty;
-        public string Genre { get; set; } = string.Empty;
     }
 }

@@ -2,6 +2,7 @@
 using music_manager_starter.Data.Models;
 using music_manager_starter.Server.Repositories;
 using music_manager_starter.Server.Services;
+using music_manager_starter.Shared;
 using System.Text;
 using System.Text.Json;
 
@@ -10,6 +11,37 @@ namespace music_manager_starter.Server.Services
     public class PlaylistService : IPlaylistService
     {
         private readonly IPlaylistRepository _playlistRepository;
+
+        private static PlaylistDto MapToDto(Playlist playlist)
+        {
+            return new PlaylistDto
+            {
+                Id = playlist.Id,
+                Name = playlist.Name,
+                CreatedByUserId = playlist.CreatedByUserId,
+                CreatedAt = playlist.CreatedAt,
+                UpdatedAt = playlist.UpdatedAt,
+                PlaylistSongs = playlist.PlaylistSongs
+                    .OrderBy(ps => ps.OrderIndex)
+                    .Select(ps => new PlaylistSongDto
+                    {
+                        PlaylistId = ps.PlaylistId,
+                        SongId = ps.SongId,
+                        OrderIndex = ps.OrderIndex,
+                        AddedAt = ps.AddedAt,
+                        Song = new Shared.Song
+                        {
+                            Id = ps.Song.Id,
+                            Title = ps.Song.Title,
+                            Artist = ps.Song.Artist,
+                            Album = ps.Song.Album,
+                            Genre = ps.Song.Genre
+                        }
+                    })
+                    .ToList()
+            };
+        }
+
 
         public PlaylistService(IPlaylistRepository playlistRepository)
         {
@@ -31,14 +63,16 @@ namespace music_manager_starter.Server.Services
             return playlist.Id;
         }
 
-        public async Task<IReadOnlyList<Playlist>> GetAllPlaylistsAsync(string userId)
+        public async Task<IReadOnlyList<PlaylistDto>> GetAllPlaylistsAsync(string userId)
         {
-            return await _playlistRepository.GetAllByUserIdAsync(userId);
+            var playlists = await _playlistRepository.GetAllByUserIdAsync(userId);
+            return playlists.Select(MapToDto).ToList();
         }
 
-        public async Task<Playlist> GetPlaylistAsync(Guid playlistId, string userId)
+        public async Task<PlaylistDto> GetPlaylistAsync(Guid playlistId, string userId)
         {
-            return await RequirePlaylistAsync(playlistId, userId);
+            var playlist = await RequirePlaylistAsync(playlistId, userId);
+            return MapToDto(playlist);
         }
 
         public async Task DeletePlaylistAsync(Guid playlistId, string userId)
@@ -145,15 +179,15 @@ namespace music_manager_starter.Server.Services
         }
 
         public async Task<string> ExportAsync(
-            Guid playlistId,
-            string format,
-            string userId)
+    Guid playlistId,
+    string format,
+    string userId)
         {
             var playlist = await RequirePlaylistAsync(playlistId, userId);
 
             var songs = playlist.PlaylistSongs
                 .OrderBy(ps => ps.OrderIndex)
-                .Select(ps => ps.Song)
+                .Select(ps => ConvertToSharedSong(ps.Song))
                 .ToList();
 
             return format.ToLowerInvariant() switch
@@ -167,18 +201,54 @@ namespace music_manager_starter.Server.Services
             };
         }
 
-        private static string ExportCsv(IEnumerable<Song> songs)
+        private static Shared.Song ConvertToSharedSong(Data.Models.Song modelSong)
+        {
+            return new Shared.Song
+            {
+                Id = modelSong.Id,
+                Title = modelSong.Title,
+                Artist = modelSong.Artist,
+                Album = modelSong.Album,
+                Genre = modelSong.Genre,
+                YearReleased = modelSong.YearReleased,
+                // Note: AverageRating, UserRating, TotalRatings will be default values since they are not exported
+                AverageRating = null,
+                UserRating = null,
+                TotalRatings = 0
+            };
+        }
+
+        private static string ExportCsv(IEnumerable<Shared.Song> songs)
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine("Title,Artist,Album,Genre");
+            sb.AppendLine("Title,Artist,Album,Genre,YearReleased");
 
             foreach (var song in songs)
             {
-                sb.AppendLine($"{song.Title},{song.Artist},{song.Album},{song.Genre}");
+                var title = EscapeCsvField(song.Title);
+                var artist = EscapeCsvField(song.Artist);
+                var album = EscapeCsvField(song.Album);
+                var genre = EscapeCsvField(song.Genre);
+                var year = song.YearReleased?.ToString() ?? "";
+
+                sb.AppendLine($"{title},{artist},{album},{genre},{year}");
             }
 
             return sb.ToString();
+        }
+
+        private static string EscapeCsvField(string field)
+        {
+            if (string.IsNullOrEmpty(field))
+                return "";
+
+            if (field.Contains(",") || field.Contains("\"") || field.Contains("\n") || field.Contains("\r"))
+            {
+                return $"\"{field.Replace("\"", "\"\"")}\"";
+            }
+
+            return field;
         }
 
         private async Task<Playlist> RequirePlaylistAsync(Guid playlistId, string userId)

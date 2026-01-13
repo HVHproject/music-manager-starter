@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using music_manager_starter.Data.Models;
 using music_manager_starter.Server.Services;
+using music_manager_starter.Shared;
 
 namespace music_manager_starter.Server.Controllers
 {
@@ -24,7 +25,7 @@ namespace music_manager_starter.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<Playlist>>> GetAll()
+        public async Task<ActionResult<IReadOnlyList<PlaylistDto>>> GetAll()
         {
             var userId = User.Identity!.Name!;
             var playlists = await _playlistService.GetAllPlaylistsAsync(userId);
@@ -32,7 +33,7 @@ namespace music_manager_starter.Server.Controllers
         }
 
         [HttpGet("{playlistId:guid}")]
-        public async Task<ActionResult<Playlist>> Get(Guid playlistId)
+        public async Task<ActionResult<PlaylistDto>> Get(Guid playlistId)
         {
             var userId = User.Identity!.Name!;
             var playlist = await _playlistService.GetPlaylistAsync(playlistId, userId);

@@ -195,7 +195,7 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                               d="M8 7h8M8 11h8M8 15h5" />
                                                     </svg>
-                                                    Delete Copies
+                                                    Clear Duplicates
                                                 </button>
 
 
@@ -304,10 +304,6 @@
                                     <div class="text-sm text-gray-400">
                                         <span class="font-medium text-gray-300">Tip:</span> Use drag and drop to reorder songs
                                     </div>
-                                    <button class="px-4 py-2 text-sm font-medium text-red-500 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                                            @onclick="RemoveAllSongs">
-                                        Remove All Songs
-                                    </button>
                                 </div>
                             </div>
                         }
@@ -382,6 +378,144 @@
     </div>
 }
 
+@if (showAddSongsModal)
+{
+    <div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+         @onclick="CloseModals">
+        <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-3xl h-[80vh] flex flex-col"
+             @onclick:stopPropagation>
+
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-white">Add Songs to "@selectedPlaylist?.Name"</h3>
+                <button class="text-gray-400 hover:text-white" @onclick="CloseModals">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="p-4 border-b border-gray-700">
+                <input class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
+                       placeholder="Search songs by title, artist, or album..."
+                       @bind="searchQuery"
+                       @bind:event="oninput"
+                       @onkeydown="@(async e => { if (e.Key == "Enter") await SearchSongs(); })" />
+
+                <div class="mt-2">
+                    <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                            @onclick="SearchSongs">
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                @if (isSearching)
+                {
+                    <div class="flex justify-center items-center h-32">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                        <span class="ml-3 text-gray-400">Searching...</span>
+                    </div>
+                }
+                else if (searchResults == null)
+                {
+                    <p class="text-gray-400 text-center py-8">Enter a search term to find songs</p>
+                }
+                else if (!searchResults.Any())
+                {
+                    <p class="text-gray-400 text-center py-8">No songs found. Try a different search.</p>
+                }
+                else
+                {
+                    <div class="text-sm text-gray-400 mb-2">
+                        @selectedSongIds.Count song@(selectedSongIds.Count != 1 ? "s" : "") selected
+                        @if (selectedSongIds.Any())
+                        {
+                            <button class="ml-4 text-indigo-400 hover:text-indigo-300"
+                                    @onclick="ClearSelection">
+                                Clear selection
+                            </button>
+                        }
+                    </div>
+
+                    @foreach (var song in searchResults)
+                    {
+                        <div class="flex items-center gap-3 p-3 bg-gray-700 rounded hover:bg-gray-600 transition-colors">
+                            <input type="checkbox"
+                                   class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-800"
+                                   checked="@selectedSongIds.Contains(song.Id)"
+                                   @onchange="() => ToggleSongSelection(song.Id)" />
+
+                            <div class="flex-1 min-w-0">
+                                <div class="text-white font-medium truncate">
+                                    @song.Title
+                                </div>
+                                <div class="text-sm text-gray-400 truncate">
+                                    @song.Artist • @song.Album
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="px-2 py-0.5 text-xs font-medium bg-gray-800 text-gray-300 rounded-full">
+                                        @song.Genre
+                                    </span>
+                                    @if (song.YearReleased.HasValue)
+                                    {
+                                        <span class="text-xs text-gray-500">
+                                            @song.YearReleased
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (song.AverageRating.HasValue)
+                            {
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 text-yellow-500 fill-current" viewBox="0 0 20 20">
+                                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                                    </svg>
+                                    <span class="ml-1 text-sm text-gray-300">
+                                        @song.AverageRating.Value.ToString("0.0")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (hasMoreSearchResults && searchResults.Any())
+                    {
+                        <div class="flex justify-center mt-4">
+                            <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled="@isLoadingMore"
+                                    @onclick="LoadMoreSearchResults">
+                                @(isLoadingMore ? "Loading..." : "Load More")
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-gray-700 flex justify-between items-center">
+                <span class="text-sm text-gray-400">
+                    @selectedSongIds.Count song@(selectedSongIds.Count != 1 ? "s" : "") selected
+                </span>
+
+                <div class="flex gap-2">
+                    <button class="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                            @onclick="CloseModals">
+                        Cancel
+                    </button>
+                    <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled="@(!selectedSongIds.Any())"
+                            @onclick="AddSelectedSongs">
+                        Add @selectedSongIds.Count Song@(selectedSongIds.Count != 1 ? "s" : "")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<PlaylistDto> playlists = new();
     private PlaylistDto? selectedPlaylist;
@@ -391,6 +525,13 @@
     private bool showRenameModal = false;
     private bool showDeleteModal = false;
     private bool showAddSongsModal = false;
+    private string searchQuery = string.Empty;
+    private List<Song>? searchResults;
+    private HashSet<Guid> selectedSongIds = new();
+    private bool isSearching = false;
+    private bool isLoadingMore = false;
+    private bool hasMoreSearchResults = false;
+    private Guid? searchCursor = null;
 
     private IReadOnlyList<PlaylistSongDto> orderedSongs =>
         selectedPlaylist is null
@@ -493,6 +634,131 @@
     private void ShowAddSongsModal()
     {
         showAddSongsModal = true;
+        ResetAddSongsModalState();
+    }
+
+    private void ResetAddSongsModalState()
+    {
+        searchQuery = string.Empty;
+        selectedSongIds.Clear();
+        searchResults = null;
+        searchCursor = null;
+        hasMoreSearchResults = false;
+        isSearching = false;
+        isLoadingMore = false;
+    }
+
+    private async Task SearchSongs()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+            return;
+
+        isSearching = true;
+        searchResults = null;
+        searchCursor = null;
+        hasMoreSearchResults = false;
+        StateHasChanged();
+
+        try
+        {
+            var queryParams = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+                queryParams.Add($"query={Uri.EscapeDataString(searchQuery)}");
+
+            var apiUrl = "api/songs/search";
+            if (queryParams.Any())
+                apiUrl += "?" + string.Join("&", queryParams);
+
+            var response = await Http.GetFromJsonAsync<SongSearchResponse>(apiUrl);
+            searchResults = response?.Results ?? new List<Song>();
+            searchCursor = response?.NextCursor;
+            hasMoreSearchResults = searchCursor.HasValue;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Search error: {ex.Message}");
+            searchResults = new List<Song>();
+        }
+        finally
+        {
+            isSearching = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadMoreSearchResults()
+    {
+        if (!hasMoreSearchResults || isLoadingMore || searchCursor == null)
+            return;
+
+        isLoadingMore = true;
+        StateHasChanged();
+
+        try
+        {
+            var queryParams = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+                queryParams.Add($"query={Uri.EscapeDataString(searchQuery)}");
+
+            queryParams.Add($"cursor={searchCursor}");
+
+            var apiUrl = "api/songs/search?" + string.Join("&", queryParams);
+            var response = await Http.GetFromJsonAsync<SongSearchResponse>(apiUrl);
+
+            if (response != null)
+            {
+                searchResults?.AddRange(response.Results);
+                searchCursor = response.NextCursor;
+                hasMoreSearchResults = searchCursor.HasValue;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Load more error: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingMore = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleSongSelection(Guid songId)
+    {
+        if (selectedSongIds.Contains(songId))
+            selectedSongIds.Remove(songId);
+        else
+            selectedSongIds.Add(songId);
+    }
+
+    private void ClearSelection()
+    {
+        selectedSongIds.Clear();
+    }
+
+    private async Task AddSelectedSongs()
+    {
+        if (selectedPlaylist is null || !selectedSongIds.Any())
+            return;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                $"api/playlists/{selectedPlaylist.Id}/songs",
+                selectedSongIds.ToList());
+
+            if (response.IsSuccessStatusCode)
+            {
+                await SelectPlaylist(selectedPlaylist);
+                CloseModals();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Add songs error: {ex.Message}");
+        }
     }
 
 
@@ -533,6 +799,8 @@
     {
         showRenameModal = false;
         showDeleteModal = false;
+        showAddSongsModal = false;
+        ResetAddSongsModalState();
         renamePlaylistName = string.Empty;
     }
 
