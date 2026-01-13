@@ -6,11 +6,15 @@ namespace music_manager_starter.Server.Repositories
     {
         Task<Playlist?> GetByIdAsync(Guid playlistId, string userId);
 
+        Task<IReadOnlyList<Playlist>> GetAllByUserIdAsync(string userId);
+
         Task AddAsync(Playlist playlist);
 
         Task UpdateAsync(Playlist playlist);
 
         Task DeleteAsync(Playlist playlist);
+
+        Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds);
 
         Task<IReadOnlyList<PlaylistSong>> GetSongsAsync(Guid playlistId);
 

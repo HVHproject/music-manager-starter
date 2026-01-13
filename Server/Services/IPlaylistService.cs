@@ -1,8 +1,14 @@
-﻿namespace music_manager_starter.Server.Services
+﻿using music_manager_starter.Data.Models;
+
+namespace music_manager_starter.Server.Services
 {
     public interface IPlaylistService
     {
         Task<Guid> CreatePlaylistAsync(string name, string userId);
+
+        Task<IReadOnlyList<Playlist>> GetAllPlaylistsAsync(string userId);
+
+        Task<Playlist> GetPlaylistAsync(Guid playlistId, string userId);
 
         Task DeletePlaylistAsync(Guid playlistId, string userId);
 
@@ -11,6 +17,10 @@
         Task AddSongsAsync(
             Guid playlistId,
             IReadOnlyCollection<Guid> songIds,
+            string userId);
+
+        Task RemoveSongsAsync(Guid playlistId, 
+            IReadOnlyCollection<Guid> songIds, 
             string userId);
 
         Task ReorderSongsAsync(

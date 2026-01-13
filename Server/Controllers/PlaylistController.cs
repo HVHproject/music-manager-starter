@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using music_manager_starter.Data.Models;
 using music_manager_starter.Server.Services;
 
 namespace music_manager_starter.Server.Controllers
@@ -22,6 +23,30 @@ namespace music_manager_starter.Server.Controllers
             return Ok(id);
         }
 
+        [HttpGet]
+        public async Task<ActionResult<IReadOnlyList<Playlist>>> GetAll()
+        {
+            var userId = User.Identity!.Name!;
+            var playlists = await _playlistService.GetAllPlaylistsAsync(userId);
+            return Ok(playlists);
+        }
+
+        [HttpGet("{playlistId:guid}")]
+        public async Task<ActionResult<Playlist>> Get(Guid playlistId)
+        {
+            var userId = User.Identity!.Name!;
+            var playlist = await _playlistService.GetPlaylistAsync(playlistId, userId);
+            return Ok(playlist);
+        }
+
+        [HttpPut("{playlistId:guid}/rename")]
+        public async Task<IActionResult> Rename(Guid playlistId, [FromBody] string name)
+        {
+            var userId = User.Identity!.Name!;
+            await _playlistService.RenamePlaylistAsync(playlistId, name, userId);
+            return NoContent();
+        }
+
         [HttpDelete("{playlistId:guid}")]
         public async Task<IActionResult> Delete(Guid playlistId)
         {
@@ -41,6 +66,16 @@ namespace music_manager_starter.Server.Controllers
                 songIds,
                 userId);
 
+            return NoContent();
+        }
+
+        [HttpDelete("{playlistId:guid}/songs")]
+        public async Task<IActionResult> RemoveSongs(
+            Guid playlistId,
+            [FromBody] IReadOnlyCollection<Guid> songIds)
+        {
+            var userId = User.Identity!.Name!;
+            await _playlistService.RemoveSongsAsync(playlistId, songIds, userId);
             return NoContent();
         }
 

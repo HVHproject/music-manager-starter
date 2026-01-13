@@ -24,6 +24,16 @@ namespace music_manager_starter.Server.Repositories
                     p.CreatedByUserId == userId);
         }
 
+        public async Task<IReadOnlyList<Playlist>> GetAllByUserIdAsync(string userId)
+        {
+            return await _context.Playlists
+                .Where(p => p.CreatedByUserId == userId)
+                .Include(p => p.PlaylistSongs)
+                .ThenInclude(ps => ps.Song)
+                .OrderByDescending(p => p.UpdatedAt)
+                .ToListAsync();
+        }
+
         public async Task AddAsync(Playlist playlist)
         {
             await _context.Playlists.AddAsync(playlist);
@@ -39,6 +49,33 @@ namespace music_manager_starter.Server.Repositories
         {
             _context.Playlists.Remove(playlist);
             return Task.CompletedTask;
+        }
+
+        public async Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds)
+        {
+            if (songIds == null || !songIds.Any())
+                return;
+
+            var songsToRemove = await _context.PlaylistSongs
+                .Where(ps => ps.PlaylistId == playlistId && songIds.Contains(ps.SongId))
+                .ToListAsync();
+
+            if (songsToRemove.Count == 0)
+                return;
+
+            _context.PlaylistSongs.RemoveRange(songsToRemove);
+
+            var remainingSongs = await _context.PlaylistSongs
+                .Where(ps => ps.PlaylistId == playlistId)
+                .OrderBy(ps => ps.OrderIndex)
+                .ToListAsync();
+
+            for (int i = 0; i < remainingSongs.Count; i++)
+            {
+                remainingSongs[i].OrderIndex = i;
+            }
+
+            _context.PlaylistSongs.UpdateRange(remainingSongs);
         }
 
         public async Task<IReadOnlyList<PlaylistSong>> GetSongsAsync(Guid playlistId)

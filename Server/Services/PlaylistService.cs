@@ -31,6 +31,16 @@ namespace music_manager_starter.Server.Services
             return playlist.Id;
         }
 
+        public async Task<IReadOnlyList<Playlist>> GetAllPlaylistsAsync(string userId)
+        {
+            return await _playlistRepository.GetAllByUserIdAsync(userId);
+        }
+
+        public async Task<Playlist> GetPlaylistAsync(Guid playlistId, string userId)
+        {
+            return await RequirePlaylistAsync(playlistId, userId);
+        }
+
         public async Task DeletePlaylistAsync(Guid playlistId, string userId)
         {
             var playlist = await RequirePlaylistAsync(playlistId, userId);
@@ -81,6 +91,17 @@ namespace music_manager_starter.Server.Services
             playlist.UpdatedAt = DateTime.UtcNow;
 
             await _playlistRepository.UpdateAsync(playlist);
+            await _playlistRepository.SaveChangesAsync();
+        }
+
+        public async Task RemoveSongsAsync(
+    Guid playlistId,
+    IReadOnlyCollection<Guid> songIds,
+    string userId)
+        {
+            await RequirePlaylistAsync(playlistId, userId);
+
+            await _playlistRepository.RemoveSongsAsync(playlistId, songIds);
             await _playlistRepository.SaveChangesAsync();
         }
 
