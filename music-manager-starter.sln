@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 16.0.0.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "music-manager-starter.Server", "Server\music-manager-starter.Server.csproj", "{CBB9A15F-55FF-47C9-B007-99727BC5A547}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C2A54D61-66F8-4690-AF4C-FDD117B329BE} = {C2A54D61-66F8-4690-AF4C-FDD117B329BE}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "music-manager-starter.Client", "Client\music-manager-starter.Client.csproj", "{F64790C9-F302-4415-AE4B-E2D507B26589}"
 EndProject
