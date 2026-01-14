@@ -252,90 +252,60 @@
                                         </span>
                                     </div>
 
-                                    <div class="space-y-2">
-                                        @foreach (var ps in orderedSongs)
+                                    <div class="space-y-2" id="songList">
+                                        @for (int i = 0; i < orderedSongs.Count; i++)
                                         {
-                                            <div class="group flex items-center justify-between p-4 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 hover:border-indigo-400 rounded-lg transition-all duration-200 hover:shadow-lg"
-                                                 key="@ps.SongId">
+                                            var index = i;
+                                            var ps = orderedSongs[index];
+
+                                            <div class="group flex items-center space-x-4 p-4 bg-gray-700/50 hover:bg-gray-700 border border-gray-600 hover:border-indigo-400 rounded-lg transition-all duration-200 hover:shadow-lg"
+                                                 data-song-id="@ps.SongId">
 
                                                 @if (isBulkDeleteMode)
                                                 {
-                                                    <div class="flex items-center space-x-4">
-                                                        <input type="checkbox"
-                                                               class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500 focus:ring-offset-gray-800"
-                                                               checked="@bulkDeleteSelectedIds.Contains(ps.SongId)"
-                                                               @onchange="() => ToggleBulkDeleteSelection(ps.SongId)" />
-
-
-                                                        <div class="flex items-center justify-center w-8 h-8 bg-gray-800 border border-gray-600 rounded-full text-sm font-medium text-gray-300">
-                                                            @(ps.OrderIndex + 1)
-                                                        </div>
-
-                                                        <div class="flex-1 min-w-0">
-                                                            <p class="font-medium text-white truncate">
-                                                                @ps.Song.Title
-                                                            </p>
-                                                            <div class="flex items-center space-x-3 text-sm text-gray-400">
-                                                                <span class="flex items-center">
-                                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                    </svg>
-                                                                    @ps.Song.Artist
-                                                                </span>
-                                                                <span class="text-gray-600">•</span>
-                                                                <span class="flex items-center">
-                                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                                                    </svg>
-                                                                    @ps.Song.Album
-                                                                </span>
-                                                                <span class="text-gray-600">•</span>
-                                                                <span class="px-2 py-0.5 text-xs font-medium bg-gray-800 text-gray-300 rounded-full">
-                                                                    @ps.Song.Genre
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
+                                                    <input type="checkbox"
+                                                           class="w-5 h-5 rounded border-gray-600 bg-gray-800 text-red-600 focus:ring-red-500 focus:ring-offset-gray-800"
+                                                           checked="@bulkDeleteSelectedIds.Contains(ps.SongId)"
+                                                           @onchange="() => ToggleBulkDeleteSelection(ps.SongId)" />
                                                 }
                                                 else
                                                 {
-                                                    <div class="flex items-center space-x-4">
-                                                        <div class="flex items-center justify-center w-8 h-8 bg-gray-800 border border-gray-600 rounded-full text-sm font-medium text-gray-300">
-                                                            @(ps.OrderIndex + 1)
-                                                        </div>
-
-
-                                                        <div class="flex-1 min-w-0">
-
-                                                            <p class="font-medium text-white truncate">
-                                                                @ps.Song.Title
-                                                            </p>
-                                                            <div class="flex items-center space-x-3 text-sm text-gray-400">
-                                                                <span class="flex items-center">
-                                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                    </svg>
-                                                                    @ps.Song.Artist
-                                                                </span>
-                                                                <span class="text-gray-600">•</span>
-                                                                <span class="flex items-center">
-                                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                                                    </svg>
-                                                                    @ps.Song.Album
-                                                                </span>
-                                                                <span class="text-gray-600">•</span>
-                                                                <span class="px-2 py-0.5 text-xs font-medium bg-gray-800 text-gray-300 rounded-full">
-                                                                    @ps.Song.Genre
-                                                                </span>
-
-                                                            </div>
-                                                        </div>
+                                                    <!-- Drag Handle -->
+                                                    <div class="drag-handle text-gray-500 hover:text-gray-300 transition-colors cursor-move flex-shrink-0">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                                                        </svg>
                                                     </div>
                                                 }
+
+                                                <!-- Song Info -->
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="font-semibold text-white truncate text-base">@ps.Song.Title</p>
+                                                    <div class="flex items-center gap-2 text-sm text-gray-400 mt-1">
+                                                        <span class="truncate">@ps.Song.Artist</span>
+                                                        @if (!string.IsNullOrEmpty(ps.Song.Album))
+                                                        {
+                                                            <span class="text-gray-600">•</span>
+                                                            <span class="truncate">@ps.Song.Album</span>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <!-- Metadata Info -->
+                                                <div class="flex items-center gap-2 flex-shrink-0">
+                                                    @if (!string.IsNullOrEmpty(ps.Song.Genre))
+                                                    {
+                                                        <span class="px-2.5 py-1 text-xs font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 rounded-full">
+                                                            @ps.Song.Genre
+                                                        </span>
+                                                    }
+                                                    @if (ps.Song.YearReleased.HasValue)
+                                                    {
+                                                        <span class="px-2.5 py-1 text-xs font-medium bg-gray-800 text-gray-300 border border-gray-600 rounded-full">
+                                                            @ps.Song.YearReleased
+                                                        </span>
+                                                    }
+                                                </div>
                                             </div>
                                         }
                                     </div>

@@ -620,49 +620,39 @@ namespace music_manager_starter.Client.Pages
         }
 
         [JSInvokable]
-        public async Task OnSongReordered(int oldIndex, int newIndex)
+        public async Task OnSongReordered(string[] songIdStrings)
         {
-            if (selectedPlaylist == null || oldIndex == newIndex) return;
+            if (selectedPlaylist == null) return;
 
-            // Store backup
-            var backupSongs = selectedPlaylist.PlaylistSongs.ToList();
-            var backupInList = playlists.FirstOrDefault(p => p.Id == selectedPlaylist.Id);
-            var backupListSongs = backupInList?.PlaylistSongs.ToList();
+            var songIds = songIdStrings.Select(Guid.Parse).ToList();
 
-            // Optimistic: Reorder immediately
-            var songs = orderedSongs.ToList();
-            var movedSong = songs[oldIndex];
-            songs.RemoveAt(oldIndex);
-            songs.Insert(newIndex, movedSong);
+            // Create lookup for existing songs
+            var songLookup = selectedPlaylist.PlaylistSongs.ToDictionary(ps => ps.SongId);
 
-            // Update order indices
-            for (int i = 0; i < songs.Count; i++)
+            // Rebuild list in the new order
+            var songs = new List<PlaylistSongDto>();
+            for (int i = 0; i < songIds.Count; i++)
             {
-                songs[i] = new PlaylistSongDto
+                if (songLookup.TryGetValue(songIds[i], out var song))
                 {
-                    PlaylistId = songs[i].PlaylistId,
-                    SongId = songs[i].SongId,
-                    OrderIndex = i,
-                    AddedAt = songs[i].AddedAt,
-                    Song = songs[i].Song
-                };
+                    song.OrderIndex = i;
+                    songs.Add(song);
+                }
             }
 
             selectedPlaylist.PlaylistSongs = songs;
-            if (backupInList != null)
+
+            var playlistInList = playlists.FirstOrDefault(p => p.Id == selectedPlaylist.Id);
+            if (playlistInList != null)
             {
-                backupInList.PlaylistSongs = songs.ToList();
+                playlistInList.PlaylistSongs = songs.ToList();
             }
 
             StateHasChanged();
 
-            await Task.Delay(50);
-
-            await InitializeDragDrop();
-
+            // Send the new order to the server
             try
             {
-                // Send new order to server
                 var orderedSongIds = songs.Select(s => s.SongId).ToList();
                 var response = await Http.PutAsJsonAsync(
                     $"api/playlists/{selectedPlaylist.Id}/reorder",
@@ -670,30 +660,31 @@ namespace music_manager_starter.Client.Pages
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // Rollback on failure
-                    selectedPlaylist.PlaylistSongs = backupSongs;
-                    if (backupInList != null && backupListSongs != null)
-                    {
-                        backupInList.PlaylistSongs = backupListSongs;
-                    }
-                    StateHasChanged();
-                    await Task.Delay(50);
-                    await InitializeDragDrop();
+                    await RefreshSelectedPlaylist();
                 }
             }
             catch
             {
-                // Rollback on error
-                selectedPlaylist.PlaylistSongs = backupSongs;
-                if (backupInList != null && backupListSongs != null)
-                {
-                    backupInList.PlaylistSongs = backupListSongs;
-                }
-                StateHasChanged();
-                await Task.Delay(50);
-                await InitializeDragDrop();
+                await RefreshSelectedPlaylist();
             }
         }
+
+        private async Task RefreshSelectedPlaylist()
+{
+    if (selectedPlaylist == null) return;
+    
+    var refreshed = await Http.GetFromJsonAsync<PlaylistDto>($"api/playlists/{selectedPlaylist.Id}");
+    if (refreshed != null)
+    {
+        selectedPlaylist = refreshed;
+        var playlistInList = playlists.FirstOrDefault(p => p.Id == selectedPlaylist.Id);
+        if (playlistInList != null)
+        {
+            playlistInList.PlaylistSongs = refreshed.PlaylistSongs.ToList();
+        }
+        StateHasChanged();
+    }
+}
 
         public void Dispose()
         {
