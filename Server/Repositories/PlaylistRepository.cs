@@ -102,16 +102,49 @@ namespace music_manager_starter.Server.Repositories
                 .ToListAsync();
         }
 
-        public async Task ReplaceSongsAsync(
-            Guid playlistId,
-            IReadOnlyList<PlaylistSong> songs)
+        public async Task ReplaceSongsAsync(Guid playlistId, IReadOnlyList<PlaylistSong> songs)
         {
+            // Get existing songs from database
             var existing = await _context.PlaylistSongs
                 .Where(ps => ps.PlaylistId == playlistId)
                 .ToListAsync();
 
-            _context.PlaylistSongs.RemoveRange(existing);
-            await _context.PlaylistSongs.AddRangeAsync(songs);
+            // Create a dictionary for lookups
+            var existingLookup = existing.ToDictionary(e => e.SongId);
+
+            // Create a set of incoming song IDs
+            var incomingSongIds = songs.Select(s => s.SongId).ToHashSet();
+
+
+            var songsToRemove = existing.Where(e => !incomingSongIds.Contains(e.SongId)).ToList();
+            _context.PlaylistSongs.RemoveRange(songsToRemove);
+
+            // Update or add songs with new order
+            for (int i = 0; i < songs.Count; i++)
+            {
+                var newSong = songs[i];
+
+                if (existingLookup.TryGetValue(newSong.SongId, out var existingSong))
+                {
+                    existingSong.OrderIndex = i;
+                    _context.Entry(existingSong).State = EntityState.Modified;
+                }
+                else
+                {
+                    newSong.OrderIndex = i;
+                    newSong.PlaylistId = playlistId;
+                    _context.PlaylistSongs.Add(newSong);
+                }
+            }
+
+            var playlist = await _context.Playlists.FirstOrDefaultAsync(p => p.Id == playlistId);
+            if (playlist != null)
+            {
+                playlist.UpdatedAt = DateTime.UtcNow;
+                _context.Entry(playlist).State = EntityState.Modified;
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task SaveChangesAsync()
