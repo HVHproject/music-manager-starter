@@ -620,52 +620,37 @@ namespace music_manager_starter.Client.Pages
         }
 
         [JSInvokable]
-        public async Task OnSongReordered(string[] songIdStrings)
+        public async Task OnSongReordered(int oldIndex, int newIndex)
         {
-            if (selectedPlaylist == null) return;
+            if (selectedPlaylist == null || oldIndex == newIndex)
+                return;
 
-            var songIds = songIdStrings.Select(Guid.Parse).ToList();
-
-            // Create lookup for existing songs
-            var songLookup = selectedPlaylist.PlaylistSongs.ToDictionary(ps => ps.SongId);
-
-            // Rebuild list in the new order
-            var songs = new List<PlaylistSongDto>();
-            for (int i = 0; i < songIds.Count; i++)
-            {
-                if (songLookup.TryGetValue(songIds[i], out var song))
-                {
-                    song.OrderIndex = i;
-                    songs.Add(song);
-                }
-            }
-
-            selectedPlaylist.PlaylistSongs = songs;
-
-            var playlistInList = playlists.FirstOrDefault(p => p.Id == selectedPlaylist.Id);
-            if (playlistInList != null)
-            {
-                playlistInList.PlaylistSongs = songs.ToList();
-            }
-
-            StateHasChanged();
-
-            // Send the new order to the server
             try
             {
+                var songs = selectedPlaylist.PlaylistSongs
+                    .OrderBy(ps => ps.OrderIndex)
+                    .ToList();
+
+                var movedSong = songs[oldIndex];
+                songs.RemoveAt(oldIndex);
+                songs.Insert(newIndex, movedSong);
+
                 var orderedSongIds = songs.Select(s => s.SongId).ToList();
+
                 var response = await Http.PutAsJsonAsync(
                     $"api/playlists/{selectedPlaylist.Id}/reorder",
                     orderedSongIds);
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    await RefreshSelectedPlaylist();
-                }
-            }
-            catch
-            {
                 await RefreshSelectedPlaylist();
+                await Task.Delay(50); // ensures render completes
+                await InitializeDragDrop();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Reorder error: {ex.Message}");
+                await RefreshSelectedPlaylist();
+                await Task.Delay(50);
+                await InitializeDragDrop();
             }
         }
 

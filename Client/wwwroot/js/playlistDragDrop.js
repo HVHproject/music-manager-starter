@@ -14,8 +14,31 @@
             handle: '.drag-handle',
             ghostClass: 'opacity-50',
             dragClass: 'border-indigo-500',
+
+            onStart: function (evt) {
+                const parent = evt.from;
+                evt.from._originalOrder = Array.from(parent.children);
+            },
+
             onEnd: function (evt) {
-                dotNetHelper.invokeMethodAsync('OnSongReordered', evt.oldIndex, evt.newIndex);
+                const oldIdx = evt.oldIndex;
+                const newIdx = evt.newIndex;
+
+                if (oldIdx !== newIdx && evt.from._originalOrder) {
+                    const parent = evt.from;
+
+                    while (parent.firstChild) {
+                        parent.removeChild(parent.firstChild);
+                    }
+
+                    evt.from._originalOrder.forEach(child => {
+                        parent.appendChild(child);
+                    });
+
+                    delete evt.from._originalOrder;
+                }
+
+                dotNetHelper.invokeMethodAsync('OnSongReordered', oldIdx, newIdx);
             }
         });
     },
