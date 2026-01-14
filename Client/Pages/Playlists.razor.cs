@@ -565,5 +565,36 @@ namespace music_manager_starter.Client.Pages
                 StateHasChanged();
             }
         }
+
+        private async Task ExportSelectedPlaylistCsv()
+        {
+            if (selectedPlaylist is null)
+                return;
+
+            showMenu = false;
+
+            var csv = await Http.GetStringAsync(
+                $"api/playlists/{selectedPlaylist.Id}/export?format=csv");
+
+            var fileName =
+                $"{SanitizeFileName(selectedPlaylist.Name)}.csv";
+
+            await JS.InvokeVoidAsync(
+                "downloadFile",
+                fileName,
+                "text/csv",
+                csv);
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            foreach (var c in Path.GetInvalidFileNameChars())
+            {
+                name = name.Replace(c, '_');
+            }
+
+            return name;
+        }
+
     }
 }
