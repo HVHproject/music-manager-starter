@@ -94,22 +94,6 @@ namespace music_manager_starter.Server.Controllers
             return NoContent();
         }
 
-        [HttpPost("{playlistId:guid}/undo")]
-        public async Task<IActionResult> Undo(Guid playlistId)
-        {
-            var userId = User.Identity!.Name!;
-            await _playlistService.UndoAsync(playlistId, userId);
-            return NoContent();
-        }
-
-        [HttpPost("{playlistId:guid}/redo")]
-        public async Task<IActionResult> Redo(Guid playlistId)
-        {
-            var userId = User.Identity!.Name!;
-            await _playlistService.RedoAsync(playlistId, userId);
-            return NoContent();
-        }
-
         [HttpGet("{playlistId:guid}/export")]
         public async Task<ActionResult<string>> Export(
             Guid playlistId,

@@ -29,10 +29,6 @@ namespace music_manager_starter.Server.Services
             IReadOnlyList<Guid> orderedSongIds,
             string userId);
 
-        Task UndoAsync(Guid playlistId, string userId);
-
-        Task RedoAsync(Guid playlistId, string userId);
-
         Task<string> ExportAsync(
             Guid playlistId,
             string format,

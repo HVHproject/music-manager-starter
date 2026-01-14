@@ -168,16 +168,6 @@ namespace music_manager_starter.Server.Services
             await _playlistRepository.SaveChangesAsync();
         }
 
-        public Task UndoAsync(Guid playlistId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task RedoAsync(Guid playlistId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<string> ExportAsync(
     Guid playlistId,
     string format,
