@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 
 namespace music_manager_starter.Client.Pages
 {
-    public partial class Playlists
+    public partial class Playlists : IDisposable
     {
         private List<PlaylistDto> playlists = new();
         private PlaylistDto? selectedPlaylist;
@@ -25,6 +25,8 @@ namespace music_manager_starter.Client.Pages
         private Guid? searchCursor = null;
         private bool isBulkDeleteMode = false;
         private HashSet<Guid> bulkDeleteSelectedIds = new();
+        private DotNetObjectReference<Playlists>? dotNetRef;
+        private ElementReference songListElement;
 
         private IReadOnlyList<PlaylistSongDto> orderedSongs =>
             selectedPlaylist is null
@@ -42,14 +44,21 @@ namespace music_manager_starter.Client.Pages
         {
             if (firstRender)
             {
+                dotNetRef = DotNetObjectReference.Create(this);
                 await JS.InvokeVoidAsync("eval", @"
-                document.addEventListener('click', function() {
-                    var component = document.querySelector('[data-playlist-component]');
-                    if (component) {
-                        component.__instance.invokeMethodAsync('CloseMenu');
-                    }
-                });
-            ");
+            document.addEventListener('click', function() {
+                var component = document.querySelector('[data-playlist-component]');
+                if (component) {
+                    component.__instance.invokeMethodAsync('CloseMenu');
+                }
+            });
+        ");
+            }
+
+            // Initialize or update drag-drop based on mode
+            if (selectedPlaylist != null && selectedPlaylist.PlaylistSongs.Any())
+            {
+                await JS.InvokeVoidAsync("playlistDragDrop.setEnabled", !isBulkDeleteMode);
             }
         }
 
@@ -123,6 +132,10 @@ namespace music_manager_starter.Client.Pages
             selectedPlaylist = await Http.GetFromJsonAsync<PlaylistDto>($"api/playlists/{playlist.Id}");
             showMenu = false;
             StateHasChanged();
+
+            // Initialize drag-drop after playlist is loaded
+            await Task.Delay(100);
+            await InitializeDragDrop();
         }
 
         private void ShowRenameModal()
@@ -444,13 +457,15 @@ namespace music_manager_starter.Client.Pages
             showMenu = false;
         }
 
-        private void ToggleBulkDeleteMode()
+        private async Task ToggleBulkDeleteMode()
         {
             isBulkDeleteMode = !isBulkDeleteMode;
             if (!isBulkDeleteMode)
             {
                 ClearBulkDeleteSelection();
             }
+
+            await JS.InvokeVoidAsync("playlistDragDrop.setEnabled", !isBulkDeleteMode);
         }
 
         private void ToggleBulkDeleteSelection(Guid songId)
@@ -596,5 +611,93 @@ namespace music_manager_starter.Client.Pages
             return name;
         }
 
+        private async Task InitializeDragDrop()
+        {
+            if (dotNetRef != null)
+            {
+                await JS.InvokeVoidAsync("playlistDragDrop.initialize", "songList", dotNetRef);
+            }
+        }
+
+        [JSInvokable]
+        public async Task OnSongReordered(int oldIndex, int newIndex)
+        {
+            if (selectedPlaylist == null || oldIndex == newIndex) return;
+
+            // Store backup
+            var backupSongs = selectedPlaylist.PlaylistSongs.ToList();
+            var backupInList = playlists.FirstOrDefault(p => p.Id == selectedPlaylist.Id);
+            var backupListSongs = backupInList?.PlaylistSongs.ToList();
+
+            // Optimistic: Reorder immediately
+            var songs = orderedSongs.ToList();
+            var movedSong = songs[oldIndex];
+            songs.RemoveAt(oldIndex);
+            songs.Insert(newIndex, movedSong);
+
+            // Update order indices
+            for (int i = 0; i < songs.Count; i++)
+            {
+                songs[i] = new PlaylistSongDto
+                {
+                    PlaylistId = songs[i].PlaylistId,
+                    SongId = songs[i].SongId,
+                    OrderIndex = i,
+                    AddedAt = songs[i].AddedAt,
+                    Song = songs[i].Song
+                };
+            }
+
+            selectedPlaylist.PlaylistSongs = songs;
+            if (backupInList != null)
+            {
+                backupInList.PlaylistSongs = songs.ToList();
+            }
+
+            StateHasChanged();
+
+            await Task.Delay(50);
+
+            await InitializeDragDrop();
+
+            try
+            {
+                // Send new order to server
+                var orderedSongIds = songs.Select(s => s.SongId).ToList();
+                var response = await Http.PutAsJsonAsync(
+                    $"api/playlists/{selectedPlaylist.Id}/reorder",
+                    orderedSongIds);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Rollback on failure
+                    selectedPlaylist.PlaylistSongs = backupSongs;
+                    if (backupInList != null && backupListSongs != null)
+                    {
+                        backupInList.PlaylistSongs = backupListSongs;
+                    }
+                    StateHasChanged();
+                    await Task.Delay(50);
+                    await InitializeDragDrop();
+                }
+            }
+            catch
+            {
+                // Rollback on error
+                selectedPlaylist.PlaylistSongs = backupSongs;
+                if (backupInList != null && backupListSongs != null)
+                {
+                    backupInList.PlaylistSongs = backupListSongs;
+                }
+                StateHasChanged();
+                await Task.Delay(50);
+                await InitializeDragDrop();
+            }
+        }
+
+        public void Dispose()
+        {
+            dotNetRef?.Dispose();
+        }
     }
 }
