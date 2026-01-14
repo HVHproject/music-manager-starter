@@ -56,26 +56,42 @@ namespace music_manager_starter.Server.Repositories
             if (songIds == null || !songIds.Any())
                 return;
 
-            var songsToRemove = await _context.PlaylistSongs
-                .Where(ps => ps.PlaylistId == playlistId && songIds.Contains(ps.SongId))
+            var allPlaylistSongs = await _context.PlaylistSongs
+                .Where(ps => ps.PlaylistId == playlistId)
                 .ToListAsync();
+
+            var songsToRemove = allPlaylistSongs
+                .Where(ps => songIds.Contains(ps.SongId))
+                .ToList();
 
             if (songsToRemove.Count == 0)
                 return;
 
             _context.PlaylistSongs.RemoveRange(songsToRemove);
 
-            var remainingSongs = await _context.PlaylistSongs
-                .Where(ps => ps.PlaylistId == playlistId)
+            var remainingSongs = allPlaylistSongs
+                .Where(ps => !songIds.Contains(ps.SongId))
                 .OrderBy(ps => ps.OrderIndex)
-                .ToListAsync();
+                .ToList();
 
             for (int i = 0; i < remainingSongs.Count; i++)
             {
                 remainingSongs[i].OrderIndex = i;
             }
 
-            _context.PlaylistSongs.UpdateRange(remainingSongs);
+            foreach (var song in remainingSongs)
+            {
+                _context.Entry(song).State = EntityState.Modified;
+            }
+
+            var playlist = await _context.Playlists
+                .FirstOrDefaultAsync(p => p.Id == playlistId);
+
+            if (playlist != null)
+            {
+                playlist.UpdatedAt = DateTime.UtcNow;
+                _context.Entry(playlist).State = EntityState.Modified;
+            }
         }
 
         public async Task<IReadOnlyList<PlaylistSong>> GetSongsAsync(Guid playlistId)
