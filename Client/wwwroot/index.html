@@ -27,6 +27,14 @@
         <a class="dismiss">🗙</a>
     </div>-->
     <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        window.focusSearchInput = () => {
+            const input = document.getElementById("global-search-input");
+            if (input) {
+                input.focus();
+            }
+        };
+    </script>
 </body>
 
 </html>
