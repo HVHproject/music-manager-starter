@@ -1,0 +1,194 @@
+﻿@using System.Globalization
+
+<div class="flex flex-col gap-1">
+    <div class="flex items-center gap-0.5"
+         @onmouseleave="() => ClearHover()">
+        @for (int i = 0; i < 5; i++)
+        {
+            int starIndex = i;
+            <div class="relative w-5 h-5 @(OnRatingSelected.HasDelegate ? "cursor-pointer" : "cursor-default")"
+                 @onclick="HandleClick">
+
+                <!-- Left half for 0.5 increment hover -->
+                @if (OnRatingSelected.HasDelegate)
+                {
+                    <div class="absolute left-0 top-0 w-1/2 h-full z-20"
+                         @onmouseenter="() => SetHover(starIndex + 0.5)">
+                    </div>
+                }
+
+                <!-- Right half for full increment hover -->
+                @if (OnRatingSelected.HasDelegate)
+                {
+                    <div class="absolute right-0 top-0 w-1/2 h-full z-20"
+                         @onmouseenter="() => SetHover(starIndex + 1)">
+                    </div>
+                }
+
+                
+                <div class="relative w-full h-full">
+                    <!-- Base star (always shown) -->
+                    <svg class="absolute w-5 h-5 text-gray-600"
+                         fill="currentColor"
+                         viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+
+                    <!-- Average rating -->
+                    @{
+                        var avgFill = GetFillPercentage(starIndex, "avg");
+                        if (avgFill > 0)
+                        {
+                            <div class="absolute top-0 left-0 overflow-hidden"
+                                 style="width:@avgFill%">
+                                <svg class="w-5 h-5 text-white"
+                                     fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            </div>
+                        }
+                    }
+
+                    <!-- User rating (only when not hovering) -->
+                    @if (hoverRating == 0 && UserRating.HasValue)
+                    {
+                        var userFill = GetFillPercentage(starIndex, "user");
+                        if (userFill > 0)
+                        {
+                            <div class="absolute top-0 left-0 overflow-hidden"
+                                 style="width:@userFill%">
+                                <svg class="w-5 h-5 text-yellow-300 opacity-40"
+                                     fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            </div>
+                        }
+                    }
+
+
+                    <!-- Hover preview -->
+                    @if (hoverRating > 0)
+                    {
+                        var hoverFill = GetFillPercentage(starIndex, "hover");
+                        if (hoverFill > 0)
+                        {
+                            <div class="absolute top-0 left-0 overflow-hidden"
+                                 style="width:@hoverFill%">
+                                <svg class="w-5 h-5 text-yellow-300"
+                                     fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Rating text -->
+    <div class="flex items-center justify-between text-xs">
+        <div>
+            @if (hoverRating > 0)
+            {
+                <span class="text-blue-300 font-semibold">@hoverRating.ToString("F1")</span>
+            }
+            else
+            {
+                <span class="text-gray-300">
+                    @if (AverageRating > 0)
+                    {
+                        <span>Avg: <span class="font-semibold">@AverageRating.ToString("F1")</span></span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">No ratings</span>
+                    }
+                </span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public double AverageRating { get; set; }
+
+    [Parameter]
+    public double? UserRating { get; set; }
+
+    [Parameter]
+    public EventCallback<double> OnRatingSelected { get; set; }
+
+    private double hoverRating = 0;
+
+    private string GetBaseStarColor()
+    {
+        // When hovering, show gray base stars (empty visual)
+        if (hoverRating > 0)
+            return "text-gray-600";
+
+        // Otherwise, use standard gray
+        return "text-gray-600";
+    }
+
+    private string GetFillStarColor()
+    {
+        // Yellow for hover preview
+        if (hoverRating > 0)
+            return "text-yellow-300";
+
+        // White for average rating display (when not hovering)
+        return "text-white";
+    }
+
+    private double GetFillPercentage(int starIndex, string mode)
+    {
+        double rating = mode switch
+        {
+            "hover" => hoverRating,
+            "user" => UserRating ?? 0,
+            "avg" => AverageRating,
+            _ => 0
+        };
+
+        if (rating <= 0)
+            return 0;
+
+        double starValue = starIndex + 1;
+
+        if (rating >= starValue)
+            return 100;
+
+        if (rating > starIndex)
+            return (rating - starIndex) * 100;
+
+        return 0;
+    }
+
+    private void SetHover(double rating)
+    {
+        if (OnRatingSelected.HasDelegate)
+        {
+            hoverRating = rating;
+        }
+    }
+
+    private void ClearHover()
+    {
+        hoverRating = 0;
+    }
+
+    private async Task HandleClick()
+    {
+        if (!OnRatingSelected.HasDelegate || hoverRating <= 0)
+            return;
+
+        await OnRatingSelected.InvokeAsync(hoverRating);
+        ClearHover();
+    }
+
+}

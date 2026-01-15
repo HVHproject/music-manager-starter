@@ -27,6 +27,17 @@
         <a class="dismiss">🗙</a>
     </div>-->
     <script src="_framework/blazor.webassembly.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="js/playlistDragDrop.js"></script>
+    <script src="js/download.js"></script>
+    <script>
+        window.focusSearchInput = () => {
+            const input = document.getElementById("global-search-input");
+            if (input) {
+                input.focus();
+            }
+        };
+    </script>
 </body>
 
 </html>

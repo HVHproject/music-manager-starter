@@ -1,0 +1,314 @@
+﻿@page "/search"
+@inject HttpClient Http
+@inject NavigationManager Nav
+@using music_manager_starter.Shared
+@using music_manager_starter.Client.Components
+
+@implements IDisposable
+
+@code {
+    private List<Song>? results;
+    private string query = string.Empty;
+
+    private Guid? nextCursor;
+    private bool hasMore;
+    private bool isLoadingMore;
+
+
+    // Filters
+    private string? genre;
+    private int? minYear;
+    private int? maxYear;
+    private double? minRating;
+
+    // Placeholder genres, replace with API-driven list in future development
+    private readonly string[] Genres =
+    {
+        "Alternative", "Country", "Folk", "Hip Hop", "Indie", "Metal", "Pop"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadResults();
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private async Task LoadResults()
+    {
+        isLoadingMore = true;
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        query = queryParams["q"] ?? string.Empty;
+        genre = queryParams["genre"];
+        minYear = TryParseInt(queryParams["minYear"]);
+        maxYear = TryParseInt(queryParams["maxYear"]);
+        minRating = TryParseDouble(queryParams["minRating"]);
+
+        var queryParts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(query))
+            queryParts.Add($"query={Uri.EscapeDataString(query)}");
+
+        if (!string.IsNullOrWhiteSpace(genre))
+            queryParts.Add($"genre={Uri.EscapeDataString(genre)}");
+
+        if (minYear.HasValue)
+            queryParts.Add($"minYear={minYear}");
+
+        if (maxYear.HasValue)
+            queryParts.Add($"maxYear={maxYear}");
+
+        if (minRating.HasValue)
+            queryParts.Add($"minRating={minRating}");
+
+        var apiUrl = "api/songs/search";
+        if (queryParts.Any())
+            apiUrl += "?" + string.Join("&", queryParts);
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<SongSearchResponse>(apiUrl);
+            results = response?.Results ?? new();
+            nextCursor = response?.NextCursor;
+            hasMore = nextCursor.HasValue;
+
+            isLoadingMore = false;
+        }
+        catch
+        {
+            results = new();
+        }
+    }
+
+    private void UpdateFilters()
+    {
+        var queryParts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(query))
+            queryParts.Add($"q={Uri.EscapeDataString(query)}");
+
+        if (!string.IsNullOrWhiteSpace(genre))
+            queryParts.Add($"genre={Uri.EscapeDataString(genre)}");
+
+        if (minYear.HasValue)
+            queryParts.Add($"minYear={minYear}");
+
+        if (maxYear.HasValue)
+            queryParts.Add($"maxYear={maxYear}");
+
+        if (minRating.HasValue)
+            queryParts.Add($"minRating={minRating}");
+
+        var newUrl = "/search";
+        if (queryParts.Any())
+            newUrl += "?" + string.Join("&", queryParts);
+
+        Nav.NavigateTo(newUrl);
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await LoadResults();
+        StateHasChanged();
+    }
+
+    private MarkupString Highlight(string text)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return new MarkupString(text);
+
+        var highlighted = text.Replace(
+            query,
+            $"<mark>{query}</mark>",
+            StringComparison.OrdinalIgnoreCase);
+
+        return new MarkupString(highlighted);
+    }
+
+    private static int? TryParseInt(string? value)
+        => int.TryParse(value, out var v) ? v : null;
+
+    private static double? TryParseDouble(string? value)
+        => double.TryParse(value, out var v) ? v : null;
+
+    private async Task SubmitRating(Guid songId, double rating)
+    {
+        var song = results?.FirstOrDefault(s => s.Id == songId);
+        if (song == null) return;
+
+        var oldUser = song.UserRating;
+        var oldAvg = song.AverageRating;
+        var oldTotal = song.TotalRatings;
+
+        song.UserRating = rating;
+        StateHasChanged();
+
+        try
+        {
+            await Http.PostAsJsonAsync($"api/ratings/{songId}", rating);
+            await FetchUpdatedSongRating(songId);
+        }
+        catch
+        {
+            song.UserRating = oldUser;
+            song.AverageRating = oldAvg;
+            song.TotalRatings = oldTotal;
+            StateHasChanged();
+        }
+    }
+
+    private async Task FetchUpdatedSongRating(Guid songId)
+    {
+        var updated = await Http.GetFromJsonAsync<Song>($"api/songs/{songId}/rating-info");
+        var song = results?.FirstOrDefault(s => s.Id == songId);
+
+        if (song != null && updated != null)
+        {
+            song.AverageRating = updated.AverageRating;
+            song.UserRating = updated.UserRating;
+            song.TotalRatings = updated.TotalRatings;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+    }
+
+    private async Task LoadMore()
+    {
+        if (!hasMore || isLoadingMore) return;
+
+        isLoadingMore = true;
+
+        var queryParts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(query))
+            queryParts.Add($"query={Uri.EscapeDataString(query)}");
+
+        if (!string.IsNullOrWhiteSpace(genre))
+            queryParts.Add($"genre={Uri.EscapeDataString(genre)}");
+
+        if (minYear.HasValue)
+            queryParts.Add($"minYear={minYear}");
+
+        if (maxYear.HasValue)
+            queryParts.Add($"maxYear={maxYear}");
+
+        if (minRating.HasValue)
+            queryParts.Add($"minRating={minRating}");
+
+        if (nextCursor.HasValue)
+            queryParts.Add($"cursor={nextCursor}");
+
+        var apiUrl = "api/songs/search?" + string.Join("&", queryParts);
+
+        var response = await Http.GetFromJsonAsync<SongSearchResponse>(apiUrl);
+
+        if (response != null)
+        {
+            results!.AddRange(response.Results);
+            nextCursor = response.NextCursor;
+            hasMore = nextCursor.HasValue;
+        }
+
+        isLoadingMore = false;
+    }
+
+}
+
+<div class="p-4 bg-gray-900/50 h-full overflow-y-auto">
+    <h2 class="text-xl font-semibold text-white mb-4">Search Results</h2>
+
+    <!-- Filters -->
+    <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <select class="bg-gray-700 text-white px-2 py-1 rounded"
+                @bind="genre"
+                @bind:after="UpdateFilters">
+            <option value="">All Genres</option>
+            @foreach (var g in Genres)
+            {
+                <option value="@g">@g</option>
+            }
+        </select>
+
+        <input type="number"
+               class="bg-gray-700 text-white px-2 py-1 rounded"
+               placeholder="Min Year"
+               @bind="minYear"
+               @bind:after="UpdateFilters" />
+
+
+        <input type="number"
+               class="bg-gray-700 text-white px-2 py-1 rounded"
+               placeholder="Max Year"
+               @bind="maxYear"
+               @bind:after="UpdateFilters" />
+
+        <select class="bg-gray-700 text-white px-2 py-1 rounded"
+                @bind="minRating"
+                @bind:after="UpdateFilters">
+            <option value="">Min Rating</option>
+            @for (double r = 0.5; r <= 5; r += 0.5)
+            {
+                <option value="@r">@r.ToString("0.0")+</option>
+            }
+        </select>
+    </div>
+
+    @if (results == null)
+    {
+        <p class="text-gray-400">Searching...</p>
+    }
+    else if (!results.Any())
+    {
+        <p class="text-gray-400">No results found.</p>
+    }
+    else
+    {
+        <div class="p-3 text-gray-300 rounded mb-2 flex flex-row gap-2 justify-between font-bold">
+            <div class="w-full">Song</div>
+            <div class="w-64">Genre</div>
+            <div class="w-48">Rating</div>
+        </div>
+
+        foreach (var song in results)
+        {
+            <div class="p-3 bg-gray-700 text-gray-300 rounded mb-2 flex flex-row gap-2 justify-between">
+                <div class="w-full">
+                    <strong>@Highlight(song.Title) - @Highlight(song.Artist)</strong>
+                    <div class="text-sm text-gray-300">
+                        @Highlight(song.Album)
+                        @if (song.YearReleased.HasValue)
+                        {
+                            <span> • <i>@song.YearReleased</i></span>
+                        }
+                    </div>
+                </div>
+
+                <div class="w-64">
+                    @song.Genre
+                </div>
+
+                <div class="w-48">
+                    <RatingStars AverageRating="@(song.AverageRating ?? 0)"
+                                 UserRating="@song.UserRating"
+                                 OnRatingSelected="rating => SubmitRating(song.Id, rating)" />
+                </div>
+            </div>
+        }
+        @if (hasMore)
+        {
+            <div class="flex justify-center mt-4">
+                <button class="bg-gray-700 text-white px-4 py-2 rounded"
+                        disabled="@isLoadingMore"
+                        @onclick="LoadMore">
+                    @(isLoadingMore ? "Loading..." : "Load More")
+                </button>
+            </div>
+        }
+
+    }
+</div>

@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using music_manager_starter.Data;
+using music_manager_starter.Server.Middleware;
+using music_manager_starter.Server.Repositories;
+using music_manager_starter.Server.Services;
 using System.Security.AccessControl;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<DataDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
-
+builder.Services.AddScoped<IRatingService, RatingService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<ISongService, SongService>();
+builder.Services.AddScoped<IPlaylistService, PlaylistService>();
+builder.Services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
@@ -48,6 +56,9 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseMiddleware<FakeUserMiddleware>();
+
+app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapControllers();

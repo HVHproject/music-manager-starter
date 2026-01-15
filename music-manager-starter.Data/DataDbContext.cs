@@ -13,6 +13,10 @@ namespace music_manager_starter.Data
         public DataDbContext(DbContextOptions<DataDbContext> options) : base(options) { }
 
         public DbSet<Song> Songs { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
+        public DbSet<Playlist> Playlists { get; set; }
+        public DbSet<PlaylistSong> PlaylistSongs { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,6 +29,50 @@ namespace music_manager_starter.Data
                 new Song { Id = Guid.Parse("b7cc1c82-77e2-40d0-8bc2-d7e05962c0e3"), Title = "Utah", Artist = "French Cassettes", Album = "The Great Escape", Genre = "Indie" },
                 new Song { Id = Guid.Parse("22aa6f84-06d8-4a0e-bdad-3000b35b5b5f"), Title = "Something Real", Artist = "Post Malone", Album = "Twelve Carat Toothache", Genre = "Hip Hop" }
             );
+
+            modelBuilder.Entity<Rating>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+
+                entity.Property(r => r.Value)
+                      .HasPrecision(2, 1)
+                      .IsRequired();
+
+                entity.Property(r => r.UserId)
+                      .IsRequired();
+
+                entity.Property(r => r.CreatedAt)
+                      .IsRequired();
+
+                entity.HasOne(r => r.Song)
+                      .WithMany()
+                      .HasForeignKey(r => r.SongId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Enforce one rating per user per song
+                entity.HasIndex(r => new { r.SongId, r.UserId })
+                      .IsUnique();
+
+                // Performance index for analytics
+                entity.HasIndex(r => r.SongId);
+            });
+
+            modelBuilder.Entity<PlaylistSong>(entity =>
+            {
+                entity.HasKey(ps => new { ps.PlaylistId, ps.SongId });
+
+                entity.HasOne(ps => ps.Playlist)
+                      .WithMany(p => p.PlaylistSongs)
+                      .HasForeignKey(ps => ps.PlaylistId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ps => ps.Song)
+                      .WithMany()
+                      .HasForeignKey(ps => ps.SongId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(ps => new { ps.PlaylistId, ps.OrderIndex });
+            });
         }
 
     }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using music_manager_starter.Data;
 
@@ -10,12 +11,44 @@ using music_manager_starter.Data;
 namespace music_manager_starter.Data.Migrations
 {
     [DbContext(typeof(DataDbContext))]
-    partial class DataDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260112083607_AddPlaylists")]
+    partial class AddPlaylists
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.8");
+
+            modelBuilder.Entity("music_manager_starter.Data.Models.Rating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SongId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(2, 1)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SongId");
+
+                    b.HasIndex("SongId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("Ratings");
+                });
 
             modelBuilder.Entity("music_manager_starter.Data.Models.Song", b =>
                 {
@@ -38,6 +71,9 @@ namespace music_manager_starter.Data.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("YearReleased")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -100,6 +136,17 @@ namespace music_manager_starter.Data.Migrations
                             Genre = "Hip Hop",
                             Title = "Something Real"
                         });
+                });
+
+            modelBuilder.Entity("music_manager_starter.Data.Models.Rating", b =>
+                {
+                    b.HasOne("music_manager_starter.Data.Models.Song", "Song")
+                        .WithMany()
+                        .HasForeignKey("SongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Song");
                 });
 #pragma warning restore 612, 618
         }

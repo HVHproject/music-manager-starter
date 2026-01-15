@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>music-manager-starter.Server</RootNamespace>
     <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
+	  <PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
 
 	<ItemGroup>
@@ -19,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\music-manager-starter.Client.csproj" />
-    <ProjectReference Include="..\music-manager-start.Data\music-manager-start.Data.csproj" />
+    <ProjectReference Include="..\music-manager-starter.Data\music-manager-starter.Data.csproj" />
     <ProjectReference Include="..\Shared\music-manager-starter.Shared.csproj" />
   </ItemGroup>
 
