@@ -5,17 +5,29 @@ using music_manager_starter.Shared;
 
 namespace music_manager_starter.Server.Controllers
 {
+    /// <summary>
+    /// Controller for managing playlists via REST API
+    /// </summary>
     [ApiController]
     [Route("api/playlists")]
     public class PlaylistController : ControllerBase
     {
         private readonly IPlaylistService _playlistService;
 
+        /// <summary>
+        /// Initializes a new instance of the PlaylistController
+        /// </summary>
+        /// <param name="playlistService">Service for playlist operations</param>
         public PlaylistController(IPlaylistService playlistService)
         {
             _playlistService = playlistService;
         }
 
+        /// <summary>
+        /// Creates a new playlist
+        /// </summary>
+        /// <param name="name">Name of the playlist to create</param>
+        /// <returns>GUID of the newly created playlist</returns>
         [HttpPost]
         public async Task<ActionResult<Guid>> Create([FromBody] string name)
         {
@@ -24,6 +36,10 @@ namespace music_manager_starter.Server.Controllers
             return Ok(id);
         }
 
+        /// <summary>
+        /// Gets all playlists for the current user
+        /// </summary>
+        /// <returns>List of the user's playlists</returns>
         [HttpGet]
         public async Task<ActionResult<IReadOnlyList<PlaylistDto>>> GetAll()
         {
@@ -32,6 +48,11 @@ namespace music_manager_starter.Server.Controllers
             return Ok(playlists);
         }
 
+        /// <summary>
+        /// Gets a specific playlist by its ID
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to retrieve</param>
+        /// <returns>The requested playlist</returns>
         [HttpGet("{playlistId:guid}")]
         public async Task<ActionResult<PlaylistDto>> Get(Guid playlistId)
         {
@@ -40,6 +61,12 @@ namespace music_manager_starter.Server.Controllers
             return Ok(playlist);
         }
 
+        /// <summary>
+        /// Renames an existing playlist
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to rename</param>
+        /// <param name="name">New name for the playlist</param>
+        /// <returns>204 No Content on success</returns>
         [HttpPut("{playlistId:guid}/rename")]
         public async Task<IActionResult> Rename(Guid playlistId, [FromBody] string name)
         {
@@ -48,6 +75,11 @@ namespace music_manager_starter.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Deletes a playlist
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to delete</param>
+        /// <returns>204 No Content on success</returns>
         [HttpDelete("{playlistId:guid}")]
         public async Task<IActionResult> Delete(Guid playlistId)
         {
@@ -56,6 +88,12 @@ namespace music_manager_starter.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Adds songs to a playlist
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to add songs to</param>
+        /// <param name="songIds">Collection of song IDs to add</param>
+        /// <returns>204 No Content on success</returns>
         [HttpPost("{playlistId:guid}/songs")]
         public async Task<IActionResult> AddSongs(
             Guid playlistId,
@@ -70,6 +108,12 @@ namespace music_manager_starter.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Removes songs from a playlist
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to remove songs from</param>
+        /// <param name="songIds">Collection of song IDs to remove</param>
+        /// <returns>204 No Content on success</returns>
         [HttpDelete("{playlistId:guid}/songs")]
         public async Task<IActionResult> RemoveSongs(
             Guid playlistId,
@@ -80,6 +124,12 @@ namespace music_manager_starter.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Reorders songs in a playlist
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to reorder</param>
+        /// <param name="orderedSongIds">List of song IDs in the new desired order</param>
+        /// <returns>204 No Content on success</returns>
         [HttpPut("{playlistId:guid}/reorder")]
         public async Task<IActionResult> Reorder(
             Guid playlistId,
@@ -94,6 +144,12 @@ namespace music_manager_starter.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Exports a playlist in the specified format
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to export</param>
+        /// <param name="format">Export format (e.g., "json", "xml", "csv")</param>
+        /// <returns>Exported playlist data as a string</returns>
         [HttpGet("{playlistId:guid}/export")]
         public async Task<ActionResult<string>> Export(
             Guid playlistId,

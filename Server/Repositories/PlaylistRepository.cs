@@ -5,15 +5,23 @@ using music_manager_starter.Server.Repositories;
 
 namespace music_manager_starter.Server.Repositories
 {
+    /// <summary>
+    /// Entity Framework Core implementation of the playlist repository
+    /// </summary>
     public class PlaylistRepository : IPlaylistRepository
     {
         private readonly DataDbContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the PlaylistRepository
+        /// </summary>
+        /// <param name="context">Database context for data access</param>
         public PlaylistRepository(DataDbContext context)
         {
             _context = context;
         }
 
+        /// <inheritdoc/>
         public async Task<Playlist?> GetByIdAsync(Guid playlistId, string userId)
         {
             return await _context.Playlists
@@ -24,6 +32,7 @@ namespace music_manager_starter.Server.Repositories
                     p.CreatedByUserId == userId);
         }
 
+        /// <inheritdoc/>
         public async Task<IReadOnlyList<Playlist>> GetAllByUserIdAsync(string userId)
         {
             return await _context.Playlists
@@ -34,23 +43,27 @@ namespace music_manager_starter.Server.Repositories
                 .ToListAsync();
         }
 
+        /// <inheritdoc/>
         public async Task AddAsync(Playlist playlist)
         {
             await _context.Playlists.AddAsync(playlist);
         }
 
+        /// <inheritdoc/>
         public Task UpdateAsync(Playlist playlist)
         {
             _context.Playlists.Update(playlist);
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc/>
         public Task DeleteAsync(Playlist playlist)
         {
             _context.Playlists.Remove(playlist);
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc/>
         public async Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds)
         {
             if (songIds == null || !songIds.Any())
@@ -94,6 +107,7 @@ namespace music_manager_starter.Server.Repositories
             }
         }
 
+        /// <inheritdoc/>
         public async Task<IReadOnlyList<PlaylistSong>> GetSongsAsync(Guid playlistId)
         {
             return await _context.PlaylistSongs
@@ -102,6 +116,7 @@ namespace music_manager_starter.Server.Repositories
                 .ToListAsync();
         }
 
+        /// <inheritdoc/>
         public async Task ReplaceSongsAsync(Guid playlistId, IReadOnlyList<PlaylistSong> songs)
         {
             // Get existing songs from database
@@ -147,6 +162,7 @@ namespace music_manager_starter.Server.Repositories
             await _context.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

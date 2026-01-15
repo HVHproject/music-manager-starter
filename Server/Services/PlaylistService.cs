@@ -8,10 +8,18 @@ using System.Text.Json;
 
 namespace music_manager_starter.Server.Services
 {
+    /// <summary>
+    /// Implementation of the playlist service that manages playlist business logic
+    /// </summary>
     public class PlaylistService : IPlaylistService
     {
         private readonly IPlaylistRepository _playlistRepository;
 
+        /// <summary>
+        /// Maps a Playlist entity to a PlaylistDto
+        /// </summary>
+        /// <param name="playlist">Playlist entity to map</param>
+        /// <returns>PlaylistDto with ordered songs</returns>
         private static PlaylistDto MapToDto(Playlist playlist)
         {
             return new PlaylistDto
@@ -42,12 +50,16 @@ namespace music_manager_starter.Server.Services
             };
         }
 
-
+        /// <summary>
+        /// Initializes a new instance of the PlaylistService
+        /// </summary>
+        /// <param name="playlistRepository">Repository for playlist data access</param>
         public PlaylistService(IPlaylistRepository playlistRepository)
         {
             _playlistRepository = playlistRepository;
         }
 
+        /// <inheritdoc/>
         public async Task<Guid> CreatePlaylistAsync(string name, string userId)
         {
             var playlist = new Playlist
@@ -63,18 +75,21 @@ namespace music_manager_starter.Server.Services
             return playlist.Id;
         }
 
+        /// <inheritdoc/>
         public async Task<IReadOnlyList<PlaylistDto>> GetAllPlaylistsAsync(string userId)
         {
             var playlists = await _playlistRepository.GetAllByUserIdAsync(userId);
             return playlists.Select(MapToDto).ToList();
         }
 
+        /// <inheritdoc/>
         public async Task<PlaylistDto> GetPlaylistAsync(Guid playlistId, string userId)
         {
             var playlist = await RequirePlaylistAsync(playlistId, userId);
             return MapToDto(playlist);
         }
 
+        /// <inheritdoc/>
         public async Task DeletePlaylistAsync(Guid playlistId, string userId)
         {
             var playlist = await RequirePlaylistAsync(playlistId, userId);
@@ -83,6 +98,7 @@ namespace music_manager_starter.Server.Services
             await _playlistRepository.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task RenamePlaylistAsync(Guid playlistId, string name, string userId)
         {
             var playlist = await RequirePlaylistAsync(playlistId, userId);
@@ -94,6 +110,7 @@ namespace music_manager_starter.Server.Services
             await _playlistRepository.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task AddSongsAsync(
             Guid playlistId,
             IReadOnlyCollection<Guid> songIds,
@@ -128,10 +145,11 @@ namespace music_manager_starter.Server.Services
             await _playlistRepository.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task RemoveSongsAsync(
-    Guid playlistId,
-    IReadOnlyCollection<Guid> songIds,
-    string userId)
+            Guid playlistId,
+            IReadOnlyCollection<Guid> songIds,
+            string userId)
         {
             await RequirePlaylistAsync(playlistId, userId);
 
@@ -139,6 +157,7 @@ namespace music_manager_starter.Server.Services
             await _playlistRepository.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task ReorderSongsAsync(
             Guid playlistId,
             IReadOnlyList<Guid> orderedSongIds,
@@ -168,10 +187,11 @@ namespace music_manager_starter.Server.Services
             await _playlistRepository.SaveChangesAsync();
         }
 
+        /// <inheritdoc/>
         public async Task<string> ExportAsync(
-    Guid playlistId,
-    string format,
-    string userId)
+            Guid playlistId,
+            string format,
+            string userId)
         {
             var playlist = await RequirePlaylistAsync(playlistId, userId);
 
@@ -191,6 +211,11 @@ namespace music_manager_starter.Server.Services
             };
         }
 
+        /// <summary>
+        /// Converts a data model Song to a shared Song DTO
+        /// </summary>
+        /// <param name="modelSong">Data model song entity</param>
+        /// <returns>Shared song DTO with basic song information</returns>
         private static Shared.Song ConvertToSharedSong(Data.Models.Song modelSong)
         {
             return new Shared.Song
@@ -208,6 +233,11 @@ namespace music_manager_starter.Server.Services
             };
         }
 
+        /// <summary>
+        /// Exports songs to CSV format
+        /// </summary>
+        /// <param name="songs">Songs to export</param>
+        /// <returns>CSV-formatted string</returns>
         private static string ExportCsv(IEnumerable<Shared.Song> songs)
         {
             var sb = new StringBuilder();
@@ -228,6 +258,11 @@ namespace music_manager_starter.Server.Services
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Escapes a field for CSV formatting
+        /// </summary>
+        /// <param name="field">Field value to escape</param>
+        /// <returns>Escaped field value</returns>
         private static string EscapeCsvField(string field)
         {
             if (string.IsNullOrEmpty(field))
@@ -241,6 +276,13 @@ namespace music_manager_starter.Server.Services
             return field;
         }
 
+        /// <summary>
+        /// Retrieves a playlist and ensures it exists and belongs to the user
+        /// </summary>
+        /// <param name="playlistId">ID of the playlist to retrieve</param>
+        /// <param name="userId">ID of the user requesting the playlist</param>
+        /// <returns>The playlist entity</returns>
+        /// <exception cref="KeyNotFoundException">Thrown when playlist is not found or doesn't belong to user</exception>
         private async Task<Playlist> RequirePlaylistAsync(Guid playlistId, string userId)
         {
             var playlist = await _playlistRepository
