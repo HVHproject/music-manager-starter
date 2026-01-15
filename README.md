@@ -18,6 +18,12 @@ Use the latest version of Visual Studio 2022: https://visualstudio.microsoft.com
 
 Install the node packages before building the solution by using ```npm install``
 
+Make sure server is the default start up item, then run it in Visual Studio.
+
+Run ```dotnet build``` to test if the project builds.
+
+Run ```dotnet test``` to test the project entirely.
+
 
 # Song Star Ratings Update
 
