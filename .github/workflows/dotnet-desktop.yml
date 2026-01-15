@@ -19,7 +19,6 @@ jobs:
         with:
           node-version: '20'
       - name: Install frontend dependencies
-        working-directory: Client
         run: npm install
       - name: Restore .NET dependencies
         run: dotnet restore
