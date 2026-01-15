@@ -1703,8 +1703,26 @@ video {
   cursor: not-allowed;
 }
 
+.disabled\:bg-transparent:disabled {
+  background-color: transparent;
+}
+
+.disabled\:text-gray-500:disabled {
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity));
+}
+
 .disabled\:opacity-50:disabled {
   opacity: 0.5;
+}
+
+.disabled\:hover\:bg-transparent:hover:disabled {
+  background-color: transparent;
+}
+
+.disabled\:hover\:text-gray-500:hover:disabled {
+  --tw-text-opacity: 1;
+  color: rgb(107 114 128 / var(--tw-text-opacity));
 }
 
 @media (min-width: 640px) {
