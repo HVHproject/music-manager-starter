@@ -105,3 +105,74 @@ Trade off: More complex parsing logic but enables bookmarkable searches
 1. **Genre Retrieval**: Should be dynamically fetched from database/API
 2. **Tailored Search**: Given more details of the client's needs, a search designed around said needs
 
+
+
+# Playlist CRUD Update
+
+## Architecture Decisions
+
+### Layered Architecture Pattern
+- **Controller Layer**: Thin REST API controllers handling HTTP endpoints, user authentication extraction, and route parameter binding
+- **Service Layer**: Business logic for playlist operations, validation, and data transformation between domain models and DTOs
+- **Repository Layer**: Data access abstraction with optimized Entity Framework queries using dictionaries and HashSets for O(n) performance
+- **Client-Side State Management**: Playlist management with optimistic UI updates containing rollback mechanisms, client-side undo/redo stacks (max 5 operations), per-playlist state isolation
+
+### Trade-Offs
+
+- **Client-Side vs Server-Side Undo/Redo**
+1. Client-side undo/redo implementation using JavaScript stacks
+Trade off: Undo history is lost on page refresh and limited to 5 steps, but provides immediate feedback and reduces server load.
+
+- **Prevented Duplicate Additions**
+1. Instead of allowing duplicates, and creating a function dedicated to deleting duplicates, I created a system which prevents the addition of duplicates to a playlist.
+Trade off: Users cannot add the same song to a playlist more than once, which negates the need to delete duplicates, however barriers user experience if they want to add duplicate songs to a playlist.
+
+## Features Implemented
+
+### 1. Full CRUD Operations
+- Create new playlists with user-specific ownership
+- Read all playlists for current user with song details
+- Update playlist names
+- Delete playlists with cascade deletion of songs
+- Optimistic UI updates with automatic rollback on failure
+
+### 2. Drag-and-Drop Reordering
+- Sortable.js integration via JavaScript interop
+- Visual drag handles with smooth animations
+- Server-side persistence of new song order
+- Automatic DOM synchronization after server confirmation
+- Disabled during bulk delete mode
+
+### 3. Bulk Operations
+- Add multiple songs at once from search results
+- Select songs with checkboxes in add modal
+- Bulk delete mode with multi-select
+- "Select All" and "Clear Selection" shortcuts
+- Visual feedback showing selection count
+
+### 4. Export Functionality
+- Export to CSV format with proper escaping
+- Export to JSON format with indentation
+- Includes song metadata (title, artist, album, genre, year)
+- Sanitized filenames for safe downloads
+
+### 5. Undo/Redo System
+- Client-side stack-based implementation
+- Supports drag-and-drop reordering, adding songs, and removing songs
+- Maximum 5 undo steps per playlist
+- Visual feedback (buttons enabled/disabled based on stack state)
+- Automatic state clearing when switching playlists
+- Synchronized server updates on undo/redo
+
+## Known Limitations & Future Improvements
+
+### Current Limitations
+1. **Undo/Redo Scope**: Limited to 5 operations per playlist, history lost on page refresh, not stored server side
+2. **Bulk Operations**: Cannot add songs that already exist in playlist (skipped silently), no duplicate detection warnings
+
+### Future Improvements
+
+1. **Enhanced Undo/Redo**: Depending on the client's needs, an expansion or even a refactor may be in order. If asked, it could hold history between playlists and even pages and increase history depth on expected needs.
+2. **Export/Import Features**: Personalized export for personal use, choosing which fields to export. Json export for potential import feature.
+3. **User Experience**: Playlist folders/categories/search, add songs from global advanced search, add search inside playlists.
+4. **Duplicate Songs**: Depending on the client's needs, duplicate songs could be handled in the following ways: enabled with a function for mass deletion, marked in the addition menu as already added, trigger a toast stating certain songs are already in the playlist.
