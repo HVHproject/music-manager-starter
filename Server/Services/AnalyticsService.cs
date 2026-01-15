@@ -69,8 +69,6 @@ namespace music_manager_starter.Server.Services
             var utcStartDate = startDate.Value.Date.ToUniversalTime();
             var utcEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
-            Console.WriteLine($"Getting trends from {utcStartDate:yyyy-MM-dd} to {utcEndDate:yyyy-MM-dd}");
-
             // Get all ratings and filter/group in memory (client evaluation)
             var allRatings = await _context.Ratings.ToListAsync();
 
@@ -89,8 +87,6 @@ namespace music_manager_starter.Server.Services
                 })
                 .OrderBy(t => t.Date)
                 .ToList();
-
-            Console.WriteLine($"Found {trends.Count} trend days with total {trends.Sum(t => t.TotalRatings)} ratings");
 
             return trends;
         }
