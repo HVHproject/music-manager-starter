@@ -1,41 +1,60 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using music_manager_starter.Data;
-using music_manager_starter.Data.Models;
-using System;
+using System.Security.Claims;
+using music_manager_starter.Server.Services;
+using music_manager_starter.Shared;
 
 namespace music_manager_starter.Server.Controllers
 {
+    /// <summary>
+    /// API controller for managing song operations
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class SongsController : ControllerBase
     {
-        private readonly DataDbContext _context;
+        private readonly ISongService _songService;
 
-        public SongsController(DataDbContext context)
+        /// <summary>
+        /// Initializes a new instance of the SongsController class
+        /// </summary>
+        /// <param name="songService">The song service for handling business logic</param>
+        public SongsController(ISongService songService)
         {
-            _context = context;
+            _songService = songService;
         }
 
-  
+        /// <summary>
+        /// Retrieves all songs from the system
+        /// </summary>
+        /// <returns>
+        /// HTTP 200 OK with a list of songs if successful
+        /// </returns>
+        /// <remarks>
+        /// This endpoint extracts the user ID from the authentication token and passes it to the song service
+        /// </remarks>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Song>>> GetSongs()
+        public async Task<ActionResult<List<Song>>> GetSongs()
         {
-            return await _context.Songs.ToListAsync();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var songs = await _songService.GetSongsAsync(userId);
+            return Ok(songs);
         }
 
+        /// <summary>
+        /// Adds a new song to the system
+        /// </summary>
+        /// <param name="song">The song object to be added</param>
+        /// <returns>
+        /// HTTP 200 OK if the song was successfully added,
+        /// HTTP 400 Bad Request if the song object is null
+        /// </returns>
         [HttpPost]
-        public async Task<ActionResult<Song>> PostSong(Song song)
+        public async Task<IActionResult> PostSong(Song song)
         {
             if (song == null)
-            {
-                return BadRequest("Song cannot be null.");
-            }
+                return BadRequest();
 
-
-            _context.Songs.Add(song);
-            await _context.SaveChangesAsync();
-
+            await _songService.AddSongAsync(song);
             return Ok();
         }
     }
