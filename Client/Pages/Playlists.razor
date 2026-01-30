@@ -77,7 +77,7 @@
                                                 <div>
                                                     <p class="font-medium text-gray-100 truncate">@playlist.Name</p>
                                                     <p class="text-xs text-gray-400">
-                                                        @playlist.PlaylistSongs.Count song@(playlist.PlaylistSongs.Count != 1 ? "s" : "")
+                                                        @playlist.PlaylistSongs.Count song@(playlist.PlaylistSongs.Count != 1 ? "s" : "") @(string.IsNullOrEmpty(playlist.UpdatedByUserId) ? "" : "•") @(playlist.UpdatedByUserId)
                                                     </p>
                                                 </div>
                                             </div>
