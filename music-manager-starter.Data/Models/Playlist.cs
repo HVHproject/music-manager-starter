@@ -24,6 +24,8 @@ namespace music_manager_starter.Data.Models
         /// </summary>
         public string CreatedByUserId { get; set; } = string.Empty;
 
+        public string? UpdatedByUserId { get; set; } = string.Empty;
+
         /// <summary>
         /// Timestamp when the playlist was created
         /// </summary>
