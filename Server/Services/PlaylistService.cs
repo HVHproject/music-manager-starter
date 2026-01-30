@@ -29,6 +29,7 @@ namespace music_manager_starter.Server.Services
                 CreatedByUserId = playlist.CreatedByUserId,
                 CreatedAt = playlist.CreatedAt,
                 UpdatedAt = playlist.UpdatedAt,
+                UpdatedByUserId = playlist.UpdatedByUserId ?? string.Empty,
                 PlaylistSongs = playlist.PlaylistSongs
                     .OrderBy(ps => ps.OrderIndex)
                     .Select(ps => new PlaylistSongDto
@@ -66,7 +67,8 @@ namespace music_manager_starter.Server.Services
             {
                 Id = Guid.NewGuid(),
                 Name = name,
-                CreatedByUserId = userId
+                CreatedByUserId = userId,
+                UpdatedByUserId = userId,
             };
 
             await _playlistRepository.AddAsync(playlist);
@@ -105,6 +107,7 @@ namespace music_manager_starter.Server.Services
 
             playlist.Name = name;
             playlist.UpdatedAt = DateTime.UtcNow;
+            playlist.UpdatedByUserId = userId;
 
             await _playlistRepository.UpdateAsync(playlist);
             await _playlistRepository.SaveChangesAsync();
@@ -140,6 +143,7 @@ namespace music_manager_starter.Server.Services
             }
 
             playlist.UpdatedAt = DateTime.UtcNow;
+            playlist.UpdatedByUserId = userId;
 
             await _playlistRepository.UpdateAsync(playlist);
             await _playlistRepository.SaveChangesAsync();
@@ -153,7 +157,7 @@ namespace music_manager_starter.Server.Services
         {
             await RequirePlaylistAsync(playlistId, userId);
 
-            await _playlistRepository.RemoveSongsAsync(playlistId, songIds);
+            await _playlistRepository.RemoveSongsAsync(playlistId, songIds, userId);
             await _playlistRepository.SaveChangesAsync();
         }
 
@@ -183,7 +187,7 @@ namespace music_manager_starter.Server.Services
                 });
             }
 
-            await _playlistRepository.ReplaceSongsAsync(playlistId, reordered);
+            await _playlistRepository.ReplaceSongsAsync(playlistId, reordered, userId);
             await _playlistRepository.SaveChangesAsync();
         }
 

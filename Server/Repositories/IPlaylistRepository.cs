@@ -48,8 +48,9 @@ namespace music_manager_starter.Server.Repositories
         /// </summary>
         /// <param name="playlistId">ID of the playlist to remove songs from</param>
         /// <param name="songIds">Collection of song IDs to remove</param>
+        /// <param name="userId">The User updating the playlist</param>
         /// <returns>Task representing the asynchronous operation</returns>
-        Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds);
+        Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds, string userId);
 
         /// <summary>
         /// Gets all songs in a playlist
@@ -63,10 +64,12 @@ namespace music_manager_starter.Server.Repositories
         /// </summary>
         /// <param name="playlistId">ID of the playlist to update</param>
         /// <param name="songs">New list of playlist-song associations</param>
+        /// <param name="userId">The User updating the playlist</param>
         /// <returns>Task representing the asynchronous operation</returns>
         Task ReplaceSongsAsync(
             Guid playlistId,
-            IReadOnlyList<PlaylistSong> songs);
+            IReadOnlyList<PlaylistSong> songs,
+            string userId);
 
         /// <summary>
         /// Saves all pending changes to the repository

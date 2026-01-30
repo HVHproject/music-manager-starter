@@ -64,7 +64,7 @@ namespace music_manager_starter.Server.Repositories
         }
 
         /// <inheritdoc/>
-        public async Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds)
+        public async Task RemoveSongsAsync(Guid playlistId, IReadOnlyCollection<Guid> songIds, string userId)
         {
             if (songIds == null || !songIds.Any())
                 return;
@@ -103,6 +103,7 @@ namespace music_manager_starter.Server.Repositories
             if (playlist != null)
             {
                 playlist.UpdatedAt = DateTime.UtcNow;
+                playlist.UpdatedByUserId = userId;
                 _context.Entry(playlist).State = EntityState.Modified;
             }
         }
@@ -117,7 +118,7 @@ namespace music_manager_starter.Server.Repositories
         }
 
         /// <inheritdoc/>
-        public async Task ReplaceSongsAsync(Guid playlistId, IReadOnlyList<PlaylistSong> songs)
+        public async Task ReplaceSongsAsync(Guid playlistId, IReadOnlyList<PlaylistSong> songs, string userId)
         {
             // Get existing songs from database
             var existing = await _context.PlaylistSongs
@@ -156,6 +157,7 @@ namespace music_manager_starter.Server.Repositories
             if (playlist != null)
             {
                 playlist.UpdatedAt = DateTime.UtcNow;
+                playlist.UpdatedByUserId = userId;
                 _context.Entry(playlist).State = EntityState.Modified;
             }
 
